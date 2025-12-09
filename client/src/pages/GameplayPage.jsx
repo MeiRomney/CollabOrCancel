@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import BackgroundImage from "/images/gameplayBackground.png";
+import GameChat from "../components/GameChat";
 
 const GameplayPage = () => {
   const [doomer, setDoomer] = useState(true);
@@ -176,6 +177,9 @@ const GameplayPage = () => {
         })}
       </div>
 
+      {/* Chat */}
+      <GameChat playerColor="red"/>
+
       {/* Abilities buttons */}
       <div className="absolute bottom-0 w-full h-50 bg-transparent z-4 flex justify-center items-center gap-2">
         {doomer ? (
@@ -183,7 +187,7 @@ const GameplayPage = () => {
             return (
               <button
                 key={i}
-                className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 active:scale-95 active:opacity-100"
+                className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 focus:scale-95 focus:opacity-100"
               >
                 <img src={`/images/${name}.png`} alt={`ability ${i}`} className="w-10 h-10" />
                 <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>{formatAbilityName(name)}</p>
@@ -195,7 +199,7 @@ const GameplayPage = () => {
             return (
               <button
                 key={i}
-                className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 active:scale-95 active:opacity-100"
+                className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 focus:scale-95 focus:opacity-100"
               >
                 <img src={`/images/${name}.png`} alt={`ability ${i}`} className="w-10 h-10" />
                 <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>{formatAbilityName(name)}</p>
