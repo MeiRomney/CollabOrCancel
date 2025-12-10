@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import BackgroundImage from "/images/gameplayBackground.png";
 import GameChat from "../components/GameChat";
+import Dm from "../components/Dm";
 
 const GameplayPage = () => {
   const [doomer, setDoomer] = useState(true);
+  const [chat, setChat] = useState(false);
+  const [dm, setDm] = useState(false);
+  const [selectingDmTarget, setSelectingDmTarget] = useState(false);
+  const [dmRequest, setDmRequest] = useState(null);
+  const [dmTimer, setDmTimer] = useState(null);
+  const [dmCountdown, setDmCountdown] = useState(10);
 
   const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
   const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "defend", "heal", "vote", "sabotage", "note"];
@@ -89,6 +96,7 @@ const GameplayPage = () => {
           if(i === 3) {
               imageSrc = `images/charactersFront/${otherCharacters[i]}.png`
           }
+          
           return (
               <img
                   key={i}
@@ -100,6 +108,38 @@ const GameplayPage = () => {
                       ...pos,
                       transform: `translate(-50%, -50%) ${i < 3 ? "scaleX(-1)" : ""}`,
                       zIndex: 1,
+                      cursor: selectingDmTarget ? "pointer" : "default",
+                      filter: selectingDmTarget ? "drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))" : "none",
+                      transition: "filter 0.2s ease, border 0.2s ease, transform 0.2s ease",
+                  }}
+                  onClick={() => {
+                    setDmCountdown(10);
+                    let secondsLeft = 10;
+
+                    if(!selectingDmTarget) return;
+
+                    const interval = setInterval(() => {
+                      secondsLeft -= 1;
+                      setDmCountdown(secondsLeft);
+
+                      if(secondsLeft <= 0) {
+                        clearInterval(interval);
+                      }
+                    }, 1000);
+
+                    setDmRequest({
+                      from: playerCharacter,
+                      to: otherCharacters[i],
+                      expiresAt: Date.now() + 10000
+                    });
+
+                    const timer = setTimeout(() => {
+                      setDmRequest(null);
+                      setSelectingDmTarget(false);
+                    }, 10000);
+
+                    setDmTimer({timeout: timer, interval});
+                    setSelectingDmTarget(false);
                   }}
               />
           )
@@ -178,37 +218,76 @@ const GameplayPage = () => {
       </div>
 
       {/* Chat */}
-      <GameChat playerColor="red"/>
+      {chat && (
+        <GameChat playerColor="red" onClose={() => setChat(false)}/>
+      )}  
+
+      {dm && (
+        <Dm playerColor="red" onClose={() => setDm(false)}/>
+      )}
+      {dmRequest && (
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white p-4 rounded-xl flex items-center gap-5 z-50">
+
+          {/* Animate countdown */}
+          <p className="text-white text-2xl font-bold animate-pulse">
+            ⏳ {dmCountdown}s
+          </p>
+          <p className="text-white text-xl font-bold">
+            {dmRequest.to} - DM request from {dmRequest.from}
+          </p>
+
+          {/* Accept */}
+          <button 
+            className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white transition-all duration-500"
+            onClick={() => {
+              clearTimeout(dmTimer.timeout);
+              clearInterval(dmTimer.interval);
+              setDmRequest(null);
+              setDm(true);
+            }}  
+          >
+            Accept
+          </button>
+
+          {/* Decline */}
+          <button
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-all duration-500"
+            onClick={() => {
+              clearTimeout(dmTimer.timeout);
+              clearInterval(dmTimer.interval)
+              setDmRequest(null);
+            }}
+          >
+            Decline
+          </button>
+        </div>
+      )}
 
       {/* Abilities buttons */}
       <div className="absolute bottom-0 w-full h-50 bg-transparent z-4 flex justify-center items-center gap-2">
-        {doomer ? (
-          doomerAbilities.map((name, i) => {
-            return (
-              <button
-                key={i}
-                className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 focus:scale-95 focus:opacity-100"
-              >
-                <img src={`/images/${name}.png`} alt={`ability ${i}`} className="w-10 h-10" />
-                <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>{formatAbilityName(name)}</p>
-              </button>
-            )
-          })
-        ) : (
-          viberAbilities.map((name, i) => {
-            return (
-              <button
-                key={i}
-                className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 focus:scale-95 focus:opacity-100"
-              >
-                <img src={`/images/${name}.png`} alt={`ability ${i}`} className="w-10 h-10" />
-                <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>{formatAbilityName(name)}</p>
-              </button>
-            )
-          })
-        )}
-        
-        
+        {(doomer ? doomerAbilities : viberAbilities).map((name, i) => {
+          const isChatButton = name === "chat";
+          const isDmButton = name === "dm";
+
+          return (
+            <button
+              key={i}
+              className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 active:scale-95 active:opacity-100"
+              onClick={() => {
+                if (isChatButton) {
+                  setChat(prev => !prev); // toggle chat panel
+                } else if(isDmButton) {
+                  // setDm(prev => !prev);
+                  setSelectingDmTarget(prev => !prev);
+                }
+                // Other abilities can have their own handlers here
+              }}
+            >
+              <img src={`/images/${name}.png`} alt={`ability ${i}`} className="w-10 h-10" />
+              <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>{formatAbilityName(name)}</p>
+            </button>
+          );
+        })}
       </div>
 
     </div>

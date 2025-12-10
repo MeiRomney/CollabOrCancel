@@ -1,14 +1,10 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react'
 
-const GameChat = ({ playerColor = "red", onClose }) => {
+const Dm = ({ playerColor = "red", onClose }) => {
     const [messages, setMessages] = useState([
         { id: 1, sender: "blue", text: "Hello everyone!", isNew: false },
-        { id: 2, sender: "green", text: "Hello", isNew: false },
-        { id: 3, sender: "pink", text: "Hello wassup", isNew: false },
-        { id: 4, sender: "orange", text: "My g", isNew: false },
-        { id: 5, sender: "yellow", text: "Lol", isNew: false },
-        { id: 6, sender: playerColor, text: "Ready for the round.", isNew: false },
+        { id: 2, sender: playerColor, text: "Ready for the round.", isNew: false },
     ]);
     const [input, setInput] = useState("");
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -104,7 +100,7 @@ const GameChat = ({ playerColor = "red", onClose }) => {
     >
         {/* Header */}
         <div className='chat-header cursor-move text-white text-xl font-bold p-2 bg-white/10 rounded-xl mb-2 flex justify-between'>
-            <p>Game Chat</p>
+            <p>Direct Message</p>
             <button 
                 className='cursor-pointer bg-transparent hover:bg-white/20 transition-all duration-500 rounded-md'
                 onClick={onClose}
@@ -189,4 +185,4 @@ const GameChat = ({ playerColor = "red", onClose }) => {
   )
 }
 
-export default GameChat
+export default Dm
