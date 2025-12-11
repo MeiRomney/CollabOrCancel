@@ -1,16 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Toaster } from "react-hot-toast";
 import BackgroundImage from "/images/gameplayBackground.png";
 import GameChat from "../components/GameChat";
 import Dm from "../components/Dm";
+import DmRequest from "../components/DmRequest";
+import CollabRequest from "../components/CollabRequest";
 
 const GameplayPage = () => {
   const [doomer, setDoomer] = useState(true);
   const [chat, setChat] = useState(false);
   const [dm, setDm] = useState(false);
   const [selectingDmTarget, setSelectingDmTarget] = useState(false);
+
   const [dmRequest, setDmRequest] = useState(null);
   const [dmTimer, setDmTimer] = useState(null);
   const [dmCountdown, setDmCountdown] = useState(10);
+
+  const [collabRequest, setCollabRequest] = useState(null);
+  const [collabCountdown, setCollabCountdown] = useState(10);
+  const [collabTimer, setCollabTimer] = useState(null);
 
   const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
   const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "defend", "heal", "vote", "sabotage", "note"];
@@ -59,8 +67,129 @@ const GameplayPage = () => {
     return /([a-z])([A-Z])/.test(name);
   }
 
+  const clearDmTimers = (timerObj) => {
+    if (!timerObj) return;
+    try {
+      if (timerObj.timeout) clearTimeout(timerObj.timeout);
+      if (timerObj.interval) clearInterval(timerObj.interval);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const startDmRequest = ({ from, to }) => {
+    // If there's already an active DM request, clear it first
+    if (dmTimer) {
+      clearDmTimers(dmTimer);
+      setDmTimer(null);
+    }
+
+    setDmCountdown(10);
+    let secondsLeft = 10;
+
+    const interval = setInterval(() => {
+      secondsLeft -= 1;
+      setDmCountdown(secondsLeft);
+      if (secondsLeft <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    const timeout = setTimeout(() => {
+      // expire
+      setDmRequest(null);
+      setSelectingDmTarget(false);
+      clearInterval(interval);
+      setDmTimer(null);
+    }, 10000);
+
+    setDmTimer({ timeout, interval });
+    setDmRequest({ from, to, expiresAt: Date.now() + 10000 });
+  };
+
+  const clearCollabTimers = (timerObj) => {
+    if(!timerObj) return;
+    try {
+      if(timerObj.timeout) clearTimeout(timerObj.timeout);
+      if(timerObj.interval) clearInterval(timerObj.interval);
+    } catch(e) {
+      console.log(e);
+    }
+  };
+
+  const startCollabRequest = ({ from }) => {
+    if(collabTimer) {
+      clearCollabTimers(collabTimer);
+      setCollabTimer(null);
+    }
+
+    setCollabCountdown(10);
+    let secondsLeft = 10;
+
+    const interval = setInterval(() => {
+      secondsLeft -= 1;
+      setCollabCountdown(secondsLeft);
+      if(secondsLeft <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    const timeout = setTimeout(() => {
+      setCollabRequest(null);
+      clearInterval(interval);
+      setCollabTimer(null);
+    }, 10000);
+
+    setCollabTimer({ timeout, interval });
+    setCollabRequest({ from, startedAt: Date.now(), expiresAt: Date.now() + 10000});
+  }
+
+  useEffect(() => {
+    return () => {
+      clearDmTimers(dmTimer);
+      clearCollabTimers(collabTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div style={backgroundStyle}>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          success: {
+            style: {
+              background: "rgba(255,255,255,0.2)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid white",
+              color: "white",
+              fontSize: "18px",
+              padding: "12px 20px",
+              borderRadius: "12px",
+            },
+            iconTheme: {
+              primary: "#4ade80", // Same green as your Accept button (Tailwind green-400)
+              secondary: "white",
+            },
+          },
+          error: {
+            style: {
+              background: "rgba(255,255,255,0.2)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid white",
+              color: "white",
+              fontSize: "18px",
+              padding: "12px 20px",
+              borderRadius: "12px",
+            },
+            iconTheme: {
+              primary: "#f87171", // red-400
+              secondary: "white",
+            },
+          },
+        }}
+      />
+
 
       {/* Table */}
       <img
@@ -113,32 +242,18 @@ const GameplayPage = () => {
                       transition: "filter 0.2s ease, border 0.2s ease, transform 0.2s ease",
                   }}
                   onClick={() => {
-                    setDmCountdown(10);
-                    let secondsLeft = 10;
+                    // only start DM when selecting target is active
+                    if (!selectingDmTarget) return;
 
-                    if(!selectingDmTarget) return;
+                    // ensure previous DM timers are cleared
+                    if (dmTimer) {
+                      clearDmTimers(dmTimer);
+                      setDmTimer(null);
+                    }
 
-                    const interval = setInterval(() => {
-                      secondsLeft -= 1;
-                      setDmCountdown(secondsLeft);
+                    startDmRequest({ from: playerCharacter, to: otherCharacters[i] });
 
-                      if(secondsLeft <= 0) {
-                        clearInterval(interval);
-                      }
-                    }, 1000);
-
-                    setDmRequest({
-                      from: playerCharacter,
-                      to: otherCharacters[i],
-                      expiresAt: Date.now() + 10000
-                    });
-
-                    const timer = setTimeout(() => {
-                      setDmRequest(null);
-                      setSelectingDmTarget(false);
-                    }, 10000);
-
-                    setDmTimer({timeout: timer, interval});
+                    // stop selecting target
                     setSelectingDmTarget(false);
                   }}
               />
@@ -226,41 +341,25 @@ const GameplayPage = () => {
         <Dm playerColor="red" onClose={() => setDm(false)}/>
       )}
       {dmRequest && (
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white p-4 rounded-xl flex items-center gap-5 z-50">
+        <DmRequest 
+          dmCountdown={dmCountdown} 
+          dmRequest={dmRequest} 
+          dmTimer={dmTimer} 
+          setDmRequest={(val) => {
+            // clear timers when dismissed externally
+            if (!val) {
+              clearDmTimers(dmTimer);
+              setDmTimer(null);
+            }
+            setDmRequest(val);
+          }}
+          setDm={(v) => setDm(v)}
+          playerColor="red"
+        />
+      )}
 
-          {/* Animate countdown */}
-          <p className="text-white text-2xl font-bold animate-pulse">
-            ⏳ {dmCountdown}s
-          </p>
-          <p className="text-white text-xl font-bold">
-            {dmRequest.to} - DM request from {dmRequest.from}
-          </p>
-
-          {/* Accept */}
-          <button 
-            className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white transition-all duration-500"
-            onClick={() => {
-              clearTimeout(dmTimer.timeout);
-              clearInterval(dmTimer.interval);
-              setDmRequest(null);
-              setDm(true);
-            }}  
-          >
-            Accept
-          </button>
-
-          {/* Decline */}
-          <button
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-all duration-500"
-            onClick={() => {
-              clearTimeout(dmTimer.timeout);
-              clearInterval(dmTimer.interval)
-              setDmRequest(null);
-            }}
-          >
-            Decline
-          </button>
-        </div>
+      {collabRequest && (
+        <CollabRequest playerCharacter={"red"} collabCountdown={collabCountdown} collabTimer={collabTimer} clearCollabTimers={clearCollabTimers} setCollabTimer={setCollabTimer} setCollabRequest={setCollabRequest} />
       )}
 
       {/* Abilities buttons */}
@@ -268,6 +367,7 @@ const GameplayPage = () => {
         {(doomer ? doomerAbilities : viberAbilities).map((name, i) => {
           const isChatButton = name === "chat";
           const isDmButton = name === "dm";
+          const isProposeButton = name === "proposeCollab";
 
           return (
             <button
@@ -277,8 +377,10 @@ const GameplayPage = () => {
                 if (isChatButton) {
                   setChat(prev => !prev); // toggle chat panel
                 } else if(isDmButton) {
-                  // setDm(prev => !prev);
                   setSelectingDmTarget(prev => !prev);
+                } else if(isProposeButton) {
+                  if(collabRequest) return;
+                  startCollabRequest({ from: playerCharacter });
                 }
                 // Other abilities can have their own handlers here
               }}
