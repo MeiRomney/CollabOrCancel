@@ -5,6 +5,7 @@ import GameChat from "../components/GameChat";
 import Dm from "../components/Dm";
 import DmRequest from "../components/DmRequest";
 import CollabRequest from "../components/CollabRequest";
+import CollabVote from "../components/CollabVote";
 
 const GameplayPage = () => {
   const [doomer, setDoomer] = useState(true);
@@ -19,6 +20,8 @@ const GameplayPage = () => {
   const [collabRequest, setCollabRequest] = useState(null);
   const [collabCountdown, setCollabCountdown] = useState(10);
   const [collabTimer, setCollabTimer] = useState(null);
+
+  const [collab, setCollab] = useState(false);
 
   const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
   const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "defend", "heal", "vote", "sabotage", "note"];
@@ -359,7 +362,11 @@ const GameplayPage = () => {
       )}
 
       {collabRequest && (
-        <CollabRequest playerCharacter={"red"} collabCountdown={collabCountdown} collabTimer={collabTimer} clearCollabTimers={clearCollabTimers} setCollabTimer={setCollabTimer} setCollabRequest={setCollabRequest} />
+        <CollabRequest collabRequest={collabRequest} playerCharacter={playerCharacter} collabCountdown={collabCountdown} collabTimer={collabTimer} clearCollabTimers={clearCollabTimers} setCollabTimer={setCollabTimer} setCollabRequest={setCollabRequest} />
+      )}
+
+      {collab && (
+        <CollabVote playerColor={"red"} onClose={() => setCollab(false)}/>
       )}
 
       {/* Abilities buttons */}
@@ -368,6 +375,7 @@ const GameplayPage = () => {
           const isChatButton = name === "chat";
           const isDmButton = name === "dm";
           const isProposeButton = name === "proposeCollab";
+          const isCollabButton = name === "collab";
 
           return (
             <button
@@ -381,6 +389,8 @@ const GameplayPage = () => {
                 } else if(isProposeButton) {
                   if(collabRequest) return;
                   startCollabRequest({ from: playerCharacter });
+                } else if(isCollabButton) {
+                  setCollab(prev => !prev);
                 }
                 // Other abilities can have their own handlers here
               }}

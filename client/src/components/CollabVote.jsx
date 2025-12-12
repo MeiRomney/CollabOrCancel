@@ -1,8 +1,7 @@
-import { X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react'
 
-const Dm = ({ playerColor, onClose }) => {
-    const [messages, setMessages] = useState([
+const CollabVote = ({ playerColor, onClose}) => {
+  const [messages, setMessages] = useState([
         { id: 1, sender: "blue", text: "Hello everyone!", isNew: false },
         { id: 2, sender: playerColor, text: "Ready for the round.", isNew: false },
     ]);
@@ -182,7 +181,7 @@ const Dm = ({ playerColor, onClose }) => {
             }}
         />
     </div>
-  )
+    )
 }
 
-export default Dm
+export default CollabVote

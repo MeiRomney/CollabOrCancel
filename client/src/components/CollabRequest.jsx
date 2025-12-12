@@ -1,8 +1,12 @@
 import React from 'react'
 import toast from 'react-hot-toast';
 
-const CollabRequest = ({ collabCountdown, playerCharacter, collabTimer, clearCollabTimers, setCollabTimer, setCollabRequest }) => {
+const CollabRequest = ({ collabRequest, collabCountdown, playerCharacter, collabTimer, clearCollabTimers, setCollabTimer, setCollabRequest }) => {
+  
+  if(!collabRequest || collabRequest.from !== playerCharacter) return null;
+  
   return (
+    
     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white p-4 rounded-xl flex items-center gap-5 z-50">
 
           {/* Animate countdown */}

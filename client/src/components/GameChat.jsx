@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react'
 
-const GameChat = ({ playerColor = "red", onClose }) => {
+const GameChat = ({ playerColor, onClose }) => {
     const [messages, setMessages] = useState([
         { id: 1, sender: "blue", text: "Hello everyone!", isNew: false },
         { id: 2, sender: "green", text: "Hello", isNew: false },
