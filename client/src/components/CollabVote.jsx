@@ -38,13 +38,6 @@ const CollabVote = ({ playerColor, onClose}) => {
         setPendingVote(null);
     };
 
-    const skipVote = () => {
-        setVotes(prev => ({
-            ...prev,
-            [playerColor]: "skip",
-        }));
-    };
-
   return (
     <div 
         className='fixed w-96 h-96 bg-black/60 backdrop-blur-md rounded-2xl border border-white p-3 flex flex-col overflow-hidden shadow-xl z-50'

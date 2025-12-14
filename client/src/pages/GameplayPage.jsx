@@ -23,6 +23,9 @@ const GameplayPage = () => {
 
   const [collab, setCollab] = useState(false);
 
+  const [selectingAbility, setSelectingAbility] = useState(null);
+  const [abilityVotes, setAbilityVotes] = useState({});
+
   const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
   const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "defend", "heal", "vote", "sabotage", "note"];
   const doomerAbilities = ["chat", "dm", "proposeCollab", "collab", "defend", "heal", "vote", "invisibleSabotage", "attack", "note"];
@@ -49,6 +52,14 @@ const GameplayPage = () => {
     { top: "50%", left: "68%" },
     { top: "60%", left: "75%" },
   ];
+
+  const abilityGlow = {
+    defend: "drop-shadow(0 0 18px rgba(59,130,246,0.9))",   // blue
+    heal: "drop-shadow(0 0 18px rgba(34,197,94,0.9))",     // green
+    sabotage: "drop-shadow(0 0 18px rgba(239,68,68,0.9))", // red
+    invisibleSabotage: "drop-shadow(0 0 18px rgba(239,68,68,0.9))", // red
+    attack: "drop-shadow(0 0 18px rgba(239,68,68,0.9))",   // red
+  };
 
   // Split camel case into separate words
   const formatAbilityName = (name) => {
@@ -155,6 +166,10 @@ const GameplayPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    console.log("ABILITY VOTES UPDATED:", abilityVotes);
+  }, [abilityVotes]);
+
   return (
     <div style={backgroundStyle}>
       <Toaster
@@ -199,12 +214,12 @@ const GameplayPage = () => {
           src="/images/table.png"
           alt="table"
           style={{
-          position: "absolute",
-          width: "850px",
-          left: "50%",
-          top: "70%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 2,
+            position: "absolute",
+            width: "850px",
+            left: "50%",
+            top: "70%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 2,
           }}
       />
 
@@ -213,53 +228,93 @@ const GameplayPage = () => {
           src={`/images/charactersBack/${playerCharacter}.png`}
           alt="player"
           style={{
-          position: "absolute",
-          width: "200px",
-          left: "50%",
-          top: "52%",
-          transform: "translateX(-50%)",
-          zIndex: 3,
+            position: "absolute",
+            width: "200px",
+            left: "50%",
+            top: "52%",
+            transform: "translateX(-50%)",
+            zIndex: 3,
+            filter: selectingAbility === "defend"
+              ? abilityGlow.defend
+              : "none",
+            cursor: selectingAbility === "defend"
+              ? "pointer"
+              : "default",
+            transition: "filter 0.2s ease, transform 0.2s ease",
+          }}
+          onClick={() => {
+            // Only allow self-target for DEFEND
+            if (selectingAbility !== "defend") return;
+
+            setAbilityVotes(prev => ({
+              ...prev,
+              [playerCharacter]: {
+                ability: "defend",
+                target: playerCharacter,
+              },
+            }));
+
+            setSelectingAbility(null);
           }}
       />
 
       {/* Other Characters */}
       {characterPositions.map((pos, i) => {
-          let imageSrc = `/images/characters/${otherCharacters[i]}.png`
-          if(i === 3) {
-              imageSrc = `images/charactersFront/${otherCharacters[i]}.png`
-          }
-          
-          return (
-              <img
-                  key={i}
-                  src={imageSrc}
-                  alt={`npc-${i}`}
-                  style={{
-                      position: "absolute",
-                      width: `${i === 0 || i=== 6 ? "160px" : i === 1 || i === 5 ? "150px" : "140px"}`,
-                      ...pos,
-                      transform: `translate(-50%, -50%) ${i < 3 ? "scaleX(-1)" : ""}`,
-                      zIndex: 1,
-                      cursor: selectingDmTarget ? "pointer" : "default",
-                      filter: selectingDmTarget ? "drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))" : "none",
-                      transition: "filter 0.2s ease, border 0.2s ease, transform 0.2s ease",
-                  }}
-                  onClick={() => {
-                    // only start DM when selecting target is active
-                    if (!selectingDmTarget) return;
+        const isAbiltiyTargeting = Boolean(selectingAbility);
 
-                    // ensure previous DM timers are cleared
-                    if (dmTimer) {
-                      clearDmTimers(dmTimer);
-                      setDmTimer(null);
-                    }
+        let imageSrc = `/images/characters/${otherCharacters[i]}.png`
+        if(i === 3) {
+            imageSrc = `images/charactersFront/${otherCharacters[i]}.png`
+        }
+        
+        return (
+            <img
+                key={i}
+                src={imageSrc}
+                alt={`npc-${i}`}
+                style={{
+                    position: "absolute",
+                    width: `${i === 0 || i=== 6 ? "160px" : i === 1 || i === 5 ? "150px" : "140px"}`,
+                    ...pos,
+                    transform: `translate(-50%, -50%) ${i < 3 ? "scaleX(-1)" : ""}`,
+                    zIndex: 1,
+                    filter:
+                      isAbiltiyTargeting
+                      ? abilityGlow[selectingAbility] 
+                      : selectingDmTarget 
+                      ? "drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))" 
+                      : "none",
+                    cursor: isAbiltiyTargeting || selectingDmTarget ? "pointer" : "default",
+                    transition: "filter 0.2s ease, border 0.2s ease, transform 0.2s ease",
+                }}
+                onClick={() => {
+                  if(selectingAbility) {
+                    setAbilityVotes(prev => ({
+                      ...prev,
+                      [playerCharacter]: {
+                        ability: selectingAbility,
+                        target: otherCharacters[i],
+                      }
+                    }));
+                    setSelectingAbility(null);
+                    return;
+                  }
 
-                    startDmRequest({ from: playerCharacter, to: otherCharacters[i] });
+                  // only start DM when selecting target is active
+                  if (!selectingDmTarget) return;
 
-                    // stop selecting target
-                    setSelectingDmTarget(false);
-                  }}
-              />
+                  // ensure previous DM timers are cleared
+                  if (dmTimer) {
+                    clearDmTimers(dmTimer);
+                    setDmTimer(null);
+                  }
+
+                  startDmRequest({ from: playerCharacter, to: otherCharacters[i] });
+
+                  // stop selecting target
+                  setSelectingDmTarget(false);
+                }}
+            />
           )
       })}
 
@@ -369,6 +424,12 @@ const GameplayPage = () => {
         <CollabVote playerColor={"red"} onClose={() => setCollab(false)}/>
       )}
 
+      {selectingAbility && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
+          Select target for <span className="font-bold">{selectingAbility.toUpperCase()}</span>
+        </div>
+      )}
+
       {/* Abilities buttons */}
       <div className="absolute bottom-0 w-full h-50 bg-transparent z-4 flex justify-center items-center gap-2">
         {(doomer ? doomerAbilities : viberAbilities).map((name, i) => {
@@ -391,6 +452,8 @@ const GameplayPage = () => {
                   startCollabRequest({ from: playerCharacter });
                 } else if(isCollabButton) {
                   setCollab(prev => !prev);
+                } else if (["defend", "heal", "sabotage", "invisibleSabotage", "attack"].includes(name)) {
+                  setSelectingAbility(prev => (prev === name ? null : name));
                 }
                 // Other abilities can have their own handlers here
               }}
