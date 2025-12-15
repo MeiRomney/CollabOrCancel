@@ -6,6 +6,8 @@ import Dm from "../components/Dm";
 import DmRequest from "../components/DmRequest";
 import CollabRequest from "../components/CollabRequest";
 import CollabVote from "../components/CollabVote";
+import Vote from "../components/Vote";
+import Note from "../components/Note";
 
 const GameplayPage = () => {
   const [doomer, setDoomer] = useState(true);
@@ -22,13 +24,15 @@ const GameplayPage = () => {
   const [collabTimer, setCollabTimer] = useState(null);
 
   const [collab, setCollab] = useState(false);
+  const [vote, setVote] = useState(false);
+  const [note, setNote] = useState(false);
 
   const [selectingAbility, setSelectingAbility] = useState(null);
   const [abilityVotes, setAbilityVotes] = useState({});
 
   const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
-  const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "defend", "heal", "vote", "sabotage", "note"];
-  const doomerAbilities = ["chat", "dm", "proposeCollab", "collab", "defend", "heal", "vote", "invisibleSabotage", "attack", "note"];
+  const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "vote", "defend", "heal", "sabotage", "note"];
+  const doomerAbilities = ["chat", "dm", "proposeCollab", "collab", "vote", "defend", "heal", "invisibleSabotage", "attack", "note"];
 
   const playerCharacter = characterColors[0];
   const otherCharacters = characterColors.slice(1);
@@ -56,8 +60,8 @@ const GameplayPage = () => {
   const abilityGlow = {
     defend: "drop-shadow(0 0 18px rgba(59,130,246,0.9))",   // blue
     heal: "drop-shadow(0 0 18px rgba(34,197,94,0.9))",     // green
-    sabotage: "drop-shadow(0 0 18px rgba(239,68,68,0.9))", // red
-    invisibleSabotage: "drop-shadow(0 0 18px rgba(239,68,68,0.9))", // red
+    sabotage: "drop-shadow(0 0 18px rgba(249,115,22,0.9))", // red
+    invisibleSabotage: "drop-shadow(0 0 18px rgba(168,85,247,0.9))", // red
     attack: "drop-shadow(0 0 18px rgba(239,68,68,0.9))",   // red
   };
 
@@ -423,10 +427,23 @@ const GameplayPage = () => {
       {collab && (
         <CollabVote playerColor={"red"} onClose={() => setCollab(false)}/>
       )}
+      
+      {vote && (
+        <Vote playerColor={"red"} onClose={() => setVote(false)}/>
+      )}
+      
+      {note && (
+        <Note playerColor={"red"} onClose={() => setNote(false)}/>
+      )}
 
+      {selectingDmTarget && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
+          Select target to <span className="font-bold">Request DM</span>
+        </div>
+      )}
       {selectingAbility && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
-          Select target for <span className="font-bold">{selectingAbility.toUpperCase()}</span>
+          Select target to <span className="font-bold">{selectingAbility.toUpperCase()}</span>
         </div>
       )}
 
@@ -437,6 +454,8 @@ const GameplayPage = () => {
           const isDmButton = name === "dm";
           const isProposeButton = name === "proposeCollab";
           const isCollabButton = name === "collab";
+          const isVoteButton = name === "vote";
+          const isNoteButton = name === "note";
 
           return (
             <button
@@ -454,6 +473,10 @@ const GameplayPage = () => {
                   setCollab(prev => !prev);
                 } else if (["defend", "heal", "sabotage", "invisibleSabotage", "attack"].includes(name)) {
                   setSelectingAbility(prev => (prev === name ? null : name));
+                } else if(isVoteButton) {
+                  setVote(prev => !prev);
+                } else if(isNoteButton) {
+                  setNote(prev => !prev);
                 }
                 // Other abilities can have their own handlers here
               }}
