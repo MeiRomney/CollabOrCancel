@@ -8,9 +8,14 @@ import CollabRequest from "../components/CollabRequest";
 import CollabVote from "../components/CollabVote";
 import Vote from "../components/Vote";
 import Note from "../components/Note";
+import GameStartModal from "../components/GameStartModal";
+import { AnimatePresence } from "framer-motion";
+import LeftPanels from "../components/LeftPanels";
+import RightPanels from "../components/RightPanels";
 
 const GameplayPage = () => {
   const [doomer, setDoomer] = useState(true);
+  const [showGameStart, setShowGameStart] = useState(true);
   const [chat, setChat] = useState(false);
   const [dm, setDm] = useState(false);
   const [selectingDmTarget, setSelectingDmTarget] = useState(false);
@@ -212,7 +217,19 @@ const GameplayPage = () => {
         }}
       />
 
-
+      {/* Game starting modal */}
+      <AnimatePresence>
+        {showGameStart && (
+          <GameStartModal 
+            playerColor={"red"} 
+            role={doomer ? "doomer" : "viber"} 
+            allColors={otherCharacters}
+            onClose={() => setShowGameStart(false)}
+          />
+        )}
+      </AnimatePresence>
+      
+      
       {/* Table */}
       <img
           src="/images/table.png"
@@ -323,76 +340,10 @@ const GameplayPage = () => {
       })}
 
       {/* Left panels */}
-      <div className="relative w-80 h-30 top-5 left-5 rounded-3xl bg-transparent border-white border-2 flex flex-col justify-center items-center">
-        <p className="text-2xl text-white mx-auto">Current Round: <span className="font-bold">1</span></p>
-        <p className="text-2xl text-white mx-auto">Overlord: <span className="font-bold">David (red)</span></p>
-      </div>
-
-      <div className="relative max-w-1/6 top-20 left-5 bg-transparent flex flex-col items-center justify-center gap-5">
-        <p className="text-3xl text-white font-bold">Player Stats</p>
-        <div className="w-full bg-white/10 rounded-3xl">
-          <div className="p-5 flex gap-5">
-            <img src={`/images/charactersFront/${playerCharacter}.png`} alt="playerCharacter" className="w-15" />
-            <div>
-              <p className="text-white text-xl">Name: <span className="font-bold">Player name</span></p>
-              <p className="text-white text-xl">Role: <span className="font-bold">Viber</span></p>
-              <p className="text-white text-xl">Aura: <span className="font-bold">5</span></p>
-              <p className="text-white text-xl">Vibe: <span className="font-bold">2/2</span></p>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full bg-black/30 border-white border-2 rounded-3xl flex flex-col p-4 gap-5">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-1">
-              <div className="w-8 h-8 rounded-full border-blue-500 border-2"></div>
-              <p className="text-white text-2xl">Vibers</p>
-            </div>
-            <div className="flex">
-              <div className="w-8 h-8 rounded-full border-red-500 border-2"></div>
-              <p className="text-white text-2xl">Doomers</p>
-            </div>
-          </div>
-
-          <div className="flex justify-center items-center gap-5">
-            <img src="/images/charactersFront/white.png" alt="white front character" className="w-15" />
-            <div className="flex flex-col">
-              <p className="text-white text-xl">Vibers: <span className="font-bold">6</span> remaining</p>
-              <p className="text-white text-xl">Doomers: <span className="font-bold">2</span> remaining</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LeftPanels playerCharacter={playerCharacter}/>
 
       {/* Right panels */}
-      <div className="absolute top-5 right-5 bg-white/10 p-5 rounded-3xl flex flex-col gap-0">
-        <div className="p-2 flex gap-5">
-          <img src={`/images/charactersFront/${playerCharacter}.png`} alt="playerCharacter" className="w-10" />
-          <div>
-            <p className="text-white text-lg">Name: <span className="font-bold">Player name</span></p>
-            <p className="text-white text-lg">Aura: <span className="font-bold">5</span></p>
-            <p className="text-white text-lg">Vibe: <span className="font-bold">2/2</span></p>
-          </div>
-        </div>
-        {otherCharacters.map((character, index) => {
-          if(index >= 7) {
-            return null;
-          }
-          return (
-            <div 
-              key={character}
-              className="p-2 flex gap-5"
-            >
-              <img src={`/images/charactersFront/${character}.png`} alt="playerCharacter" className="w-10" />
-              <div>
-                <p className="text-white text-lg">Name: <span className="font-bold">Player name</span></p>
-                <p className="text-white text-lg">Aura: <span className="font-bold">5</span></p>
-                <p className="text-white text-lg">Vibe: <span className="font-bold">2/2</span></p>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <RightPanels playerCharacter={playerCharacter} otherCharacters={otherCharacters} />
 
       {/* Chat */}
       {chat && (
