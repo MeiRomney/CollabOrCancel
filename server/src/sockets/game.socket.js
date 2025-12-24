@@ -110,16 +110,82 @@ export const registerGameSockets = (io, socket) => {
     });
 
     // Submit ability
-    socket.on("submit-ability", ({ gameId, ability, target }) => {
+    socket.on("submit-ability", ({ gameId, ability, target, playerColor }) => {
         updateGame(gameId, (game) => {
-            game.abilities[socket.data.playerId] = { ability, target };
+            if(!game.abilities) game.abilities = {};
+            game.abilities[playerColor] = { ability, target };
         });
+
+        // Only notify the player who submitted
+        socket.emit("ability-submitted", { ability, target });
     });
 
     // Submit vote
-    socket.on("submit-vote", ({ gameId, target }) => {
+    socket.on("submit-vote", ({ gameId, target, voterColor }) => {
         updateGame(gameId, (game) => {
-            game.votes[socket.data.playerId] = target;
+            if(!game.votes) game.votes = {};
+            game.votes[voterColor] = target;
+        });
+
+        socket.emit("vote-submitted", { target });
+    });
+
+    // End action phase and resolve round
+    socket.on("end-action-phase", ({ gameId }) => {
+        const game = getGame(gameId);
+        const results = resolveRound(game);
+
+        updateGame(gameId, (game) => {
+            // Apply all changes from resolution
+            results.changes.forEach(change => {
+                const player = game.players.find(p => p.color === change.color);
+                if(!player) return;
+
+                if(change.auraChange) player.aura += change.auraChange;
+                if(change.vibeChange) player.vibe += change.vibeChange;
+                if(change.eliminated) player.alive = false;
+            });
+
+            // Check for winners
+            const winners = checkWinCondition(game);
+            if(winners.length > 0) {
+                game.phase = "GAME_OVER";
+                game.winners = winners;
+            } else {
+                // Move to the next round
+                game.round += 1;
+                game.phase = "COLLAB_PROPOSAL";
+                game.phaseTimer = Date.now() + 60000;
+                game.abilities = {};
+                game.votes = {};
+                game.collabProposals = [];
+                game.currentCollab = null;
+            }
+        });
+
+        const updatedGame = getGame(gameId);
+
+        // Send resolution to all players
+        io.to(gameId).emit("round-resolved", results);
+
+        if(updatedGame.phase === "GAME_OVER") {
+            io.to(gameId).emit("game-over", {
+                winners: updatedGame.winners
+            });
+        } else {
+            io.to(gameId).emit("phase-changed", {
+                phase: updatedGame.phase,
+                round: updatedGame.round,
+                timer: updatedGame.phaseTimer
+            });
+        }
+    });
+
+    // Save note
+    socket.on("save-note", ({ gameId, playerColor, note }) => {
+        updateGame(gameId, (game) => {
+            const player = game.players.find(p => p.color === playerColor);
+            if(player) player.note = note;
         });
     });
 };
