@@ -147,7 +147,7 @@ export const registerGameSockets = (io, socket) => {
             });
 
             // Check for winners
-            const winners = checkWinCondition(game);
+            const winners = checkWinConditions(game);
             if(winners.length > 0) {
                 game.phase = "GAME_OVER";
                 game.winners = winners;
@@ -189,3 +189,131 @@ export const registerGameSockets = (io, socket) => {
         });
     });
 };
+
+// Helper function to resolve collab voting
+function resolveCollabVoting(game) {
+    const proposals = game.collabPoposals || [];
+
+    if(proposals.length === 0) {
+        return { winningCollab: null, auraChanges: [] };
+    }
+
+    // Find proposal with most votes
+    let maxVotes = 0;
+    let winners = [];
+
+    proposals.forEach(proposal => {
+        const voteCount = proposal.votes.length;
+        if(voteCount > maxVotes) {
+            maxVotes = voteCount;
+            winners = [proposal];
+        } else if(voteCount === maxVotes) {
+            winners.push(proposal);
+        }
+    });
+
+    const auraChanges = [];
+
+    // Handle tie; all tied collabs get +1 Aura
+    if(winners.length > 1) {
+        winners.forEach(collab => {
+            collab.votes.forEach(voterColor => {
+                const player = game.players.find(p => p.color === voterColor);
+                auraChanges.push({
+                    playerId: player.id,
+                    playerColor: voterColor,
+                    change: 1,
+                    reason: "Tied collab vote",
+                });
+            });
+        });
+        return { winningCollab: null, auraChanges, tie: true };
+    }
+
+    // Single winner
+    const winningCollab = winners[0];
+
+    // Winner proposer gets +2 Aura
+    const proposer = game.players.find(p => p.color === winningCollab.proposer);
+    auraChanges.push({
+        playerId: proposer.id,
+        playerColor: proposer.color,
+        change: 2,
+        reason: "Won collab proposal",
+    });
+
+    // Members get +1 Aura
+    winningCollab.votes.forEach(voterColor => {
+        const player = game.players.find(p => p.color === voterColor);
+        auraChanges.push({
+            playerId: player.id,
+            playerColor: voterColor,
+            change: 1,
+            reason: "Voted for winning collab",
+        });
+    });
+
+    // Loser proposer gets -2 Aura
+    proposals.forEach(proposal => {
+        if(proposal.id === winningCollab.id) return;
+        const losingProposer = proposal.proposer;
+        auraChanges.push({
+            playerId: losingProposer.id,
+            playerColor: losingProposer.color,
+            change: -2,
+            reason: "Lose collab proposal",
+        });
+    });
+
+    // Losers get -1 Aura
+    proposals.forEach(proposal => {
+        if(proposal.id === winningCollab.id) return;
+        proposal.votes.forEach(voterColor => {
+            const player = game.players.find(p => p.color === voterColor);
+            auraChanges.push({
+                playerId: player.id,
+                playerColor: voterColor,
+                change: -1,
+                reason: "Voted for losing collab"
+            });
+        });
+    });
+
+    return { winningCollab, auraChanges };
+}
+
+// Helper function to check win condition
+function checkWinConditions(game) {
+    const alivePlayers = game.players.filter(p => p.alive);
+    const winners = [];
+
+    // Check if any doomers have 10+ Aura
+    const winningDoomer = alivePlayers.find(p => p.role === "doomer" && p.aura >= 10);
+    if(winningDoomer) {
+        return [{ id: winningDoomer.id, color: winningDoomer.color, role: "doomer" }];
+    }
+
+    // Check if two vibers have 10+ Aura
+    const winningVibers = alivePlayers.filter(p => p.role === "viber" && p.aura >= 10);
+    if(winningVibers.length >= 2) {
+        return winningVibers.map(v => ({ id: v.id, color: v.color, role: "viber" }));
+    }
+
+    // End game with two players remaining
+    if(alivePlayers.length === 2) {
+        const roles = alivePlayers.map(p => p.role);
+
+        if(roles.every(r => r === "viber")) {
+            return alivePlayers.map(p => ({ id: p.id, color: p.color, role: p.role }));
+        }
+        if(roles.every(r => r === "doomer")) {
+            return alivePlayers.map(p => ({ id: p.id, color: p.color, role: p.role }));
+        }
+        if(roles.includes("doomer")) {
+            const doomer = alivePlayers.find(p => p.role === "doomer");
+            return [{ id: doomer.id, color: doomer.color, role: "doomer" }];
+        }
+    }
+
+    return winners;
+}
