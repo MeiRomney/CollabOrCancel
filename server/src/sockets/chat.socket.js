@@ -1,9 +1,8 @@
 export const registerChatSockets = (io, socket) => {
-    socket.on("send-message", ({ gameId, message, senderColor, senderRole }) => {
+    socket.on("send-message", ({ gameId, message, senderColor }) => {
         io.to(gameId).emit("message-received", {
             message,
             senderColor,
-            senderRole,
             timestamp: Date.now()
         });
     });
