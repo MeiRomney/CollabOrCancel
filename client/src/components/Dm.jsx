@@ -1,11 +1,11 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react'
 
-const Dm = ({ playerColor, onClose }) => {
-    const [messages, setMessages] = useState([
-        { id: 1, sender: "blue", text: "Hello everyone!", isNew: false },
-        { id: 2, sender: playerColor, text: "Ready for the round.", isNew: false },
-    ]);
+const Dm = ({ playerColor, otherColor, messages, onSendMessage, onClose }) => {
+    // const [messages, setMessages] = useState([
+    //     { id: 1, sender: "blue", text: "Hello everyone!", isNew: false },
+    //     { id: 2, sender: playerColor, text: "Ready for the round.", isNew: false },
+    // ]);
     const [input, setInput] = useState("");
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [size, setSize] = useState({ width: 600, height: 600 });
@@ -26,7 +26,7 @@ const Dm = ({ playerColor, onClose }) => {
 
     const handleSend = () => {
         if(!input.trim()) return;
-        setMessages(prev => [...prev, { id: Date.now(), sender: playerColor, text: input, isNew: true }]);
+        onSendMessage(input.trim());
         setInput("");
     };
 
@@ -100,7 +100,7 @@ const Dm = ({ playerColor, onClose }) => {
     >
         {/* Header */}
         <div className='chat-header cursor-move text-white text-xl font-bold p-2 bg-white/10 rounded-xl mb-2 flex justify-between'>
-            <p>Direct Message</p>
+            <p>Direct Message with <span className='capitalize'>{otherColor}</span></p>
             <button 
                 className='cursor-pointer bg-transparent hover:bg-white/20 transition-all duration-500 rounded-md'
                 onClick={onClose}
@@ -117,41 +117,36 @@ const Dm = ({ playerColor, onClose }) => {
                 scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
             }}
         >
-            {messages.map((m) => (
-                <div
-                    key={m.id}
-                    className={`max-w-[80%] flex items-start gap-2
-                            ${m.sender === playerColor ? "self-end flex-row-reverse" : "self-start"}
-                            ${m.isNew ? "animate-popIn" : ""}
-                        `}
-                    onAnimationEnd={() => {
-                        if (m.isNew) {
-                            setMessages(prev =>
-                                prev.map(msg =>
-                                    msg.id === m.id ? { ...msg, isNew: false } : msg
-                                )
-                            );
-                        }
-                    }}
-                >
-                    <img
-                        src={`/images/charactersHead/${m.sender}.png`} 
-                        alt={`${m.sender} profiles`}
-                        className='w-8 h-8 rounded-full' 
-                    />
-
-                    <div className={`px-3 py-2 rounded-xl text-white
-                        ${m.sender === playerColor
-                            ? "bg-gradient-to-r from-gray-800 to-gray-600"
-                            : "bg-white/20"
-                        }`}
-                    >
-                        <p className='text-xs opacity-70 mb-1'>{m.sender}</p>
-                        <p>{m.text}</p>
-                    </div>
-                    
+            {messages.length === 0 ? (
+                <div className='text-white/40 text-center py-8'>
+                    Start your private conversation...
                 </div>
-            ))}
+            ) : (
+                messages.map((m, i) => (
+                    <div
+                        key={i}
+                        className={`max-w-[80%] flex items-start gap-2
+                                ${m.senderColor === playerColor ? "self-end flex-row-reverse" : "self-start"}
+                            `}
+                    >
+                        <img
+                            src={`/images/charactersHead/${m.senderColor}.png`} 
+                            alt={`${m.senderColor} profiles`}
+                            className='w-8 h-8 rounded-full' 
+                        />
+
+                        <div className={`px-3 py-2 rounded-xl text-white
+                            ${m.senderColor === playerColor
+                                ? "bg-gradient-to-r from-gray-800 to-gray-600"
+                                : "bg-white/20"
+                            }`}
+                        >
+                            <p className='text-xs opacity-70 mb-1'>{m.senderColor}</p>
+                            <p>{m.message}</p>
+                        </div>
+                    </div>
+                ))
+            )}
             <div ref={messagesEndRef}/>
         </div>
 

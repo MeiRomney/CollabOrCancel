@@ -1,7 +1,15 @@
 import React from 'react'
 import toast from 'react-hot-toast';
 
-const CollabRequest = ({ collabRequest, collabCountdown, playerCharacter, collabTimer, clearCollabTimers, setCollabTimer, setCollabRequest }) => {
+const CollabRequest = ({ 
+  collabRequest, 
+  collabCountdown, 
+  playerCharacter, 
+  collabTimer, 
+  clearCollabTimers, 
+  setCollabTimer, 
+  setCollabRequest 
+}) => {
   
   if(!collabRequest || collabRequest.from !== playerCharacter) return null;
   
@@ -15,21 +23,21 @@ const CollabRequest = ({ collabRequest, collabCountdown, playerCharacter, collab
           </p>
           <img src={`/images/charactersHead/${playerCharacter}.png`} alt={`${playerCharacter}Head`} className="w-8 h-8" />
           <p className="text-white text-xl font-bold">
-              {playerCharacter} - Are you sure you want to propose a Collab?
+              {playerCharacter} - Propose a Collab?
           </p>
 
           {/* Accept */}
           <button 
-          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white transition-all duration-500"
-          onClick={() => {
-              // Accept: clear timers and close
-              if (collabTimer) {
-                clearCollabTimers(collabTimer);
-                setCollabTimer(null);
-              }
-              setCollabRequest(null);
-              toast.success("Collab proposed");
-          }}  
+            className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white transition-all duration-500"
+            onClick={() => {
+                // Accept: clear timers and close
+                if (collabTimer) {
+                  clearCollabTimers(collabTimer);
+                  setCollabTimer(null);
+                }
+                setCollabRequest(null);
+                toast.success("Collab proposed");
+            }}  
           >
             Yes
           </button>

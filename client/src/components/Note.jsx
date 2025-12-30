@@ -1,8 +1,8 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react'
 
-const Note = ({ playerColor, onClose }) => {
-    const [note, setNote] = useState("");
+const Note = ({ playerColor, initialNote, onSave, onClose }) => {
+    const [note, setNote] = useState(initialNote || "");
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [size, setSize] = useState({ width: 600, height: 600 });
     const [isDragging, setIsDragging] = useState(false);
@@ -12,26 +12,36 @@ const Note = ({ playerColor, onClose }) => {
     const chatRef = useRef(null);
     const messagesEndRef = useRef(null);
 
-    const STORAGE_KEY = "game_notes";
+    // const STORAGE_KEY = "game_notes";
 
-    const loadNote = () => {
-        const data = JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || {};
-        return data[playerColor] || "";
-    }
+    // const loadNote = () => {
+    //     const data = JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || {};
+    //     return data[playerColor] || "";
+    // }
 
-    const saveNote = (value) => {
-        let data = JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || {};
-        data[playerColor] = value;
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
+    // const saveNote = (value) => {
+    //     let data = JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || {};
+    //     data[playerColor] = value;
+    //     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // }
 
+    // useEffect(() => {
+    //     setNote(loadNote());
+    // }, [playerColor]);
+
+    // useEffect(() => {
+    //     saveNote(note);
+    // }, [note])
+
+    // Auto-save on note change
     useEffect(() => {
-        setNote(loadNote());
-    }, [playerColor]);
-
-    useEffect(() => {
-        saveNote(note);
-    }, [note])
+        const timer = setTimeout(() => {
+            if(note !== initialNote) {
+                onSave(note);
+            }
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [note]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -124,7 +134,7 @@ const Note = ({ playerColor, onClose }) => {
         <textarea 
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={`Note for Player ${playerColor}`}
+            placeholder={`Notes for Player ${playerColor}`}
             className='scrollbar-custom overflow-y-auto flex-1 bg-transparent text-white resize-none outline-none p-3 rounded-xl border border-white/20 placeholder-white/40'
             style={{
                 scrollbarWidth: "thin",
@@ -142,7 +152,7 @@ const Note = ({ playerColor, onClose }) => {
             }}
         />
     </div>
-  )
-}
+  );
+};
 
-export default Note
+export default Note;

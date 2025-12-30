@@ -1,36 +1,36 @@
 import { Check, X } from 'lucide-react';
 import React, { useState } from 'react'
 
-const Vote = ({ playerColor, onClose}) => {
+const Vote = ({ playerColor, players, onSubmitVote, onClose}) => {
 
-    const suspects = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
-    const voters = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
-    const SKIP = "skip";
-    const mockVotes = {
-        red: "blue",
-        blue: "red",
-        green: "red",
-        pink: "yellow",
-        orange: "red",
-        yellow: "blue",
-        black: "red",
-        white: "green",
-    };
+    // const suspects = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
+    // const voters = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
+    // const SKIP = "skip";
+    // const mockVotes = {
+    //     red: "blue",
+    //     blue: "red",
+    //     green: "red",
+    //     pink: "yellow",
+    //     orange: "red",
+    //     yellow: "blue",
+    //     black: "red",
+    //     white: "green",
+    // };
 
-    const [votes, setVotes] = useState(mockVotes);
+    // const [votes, setVotes] = useState(mockVotes);
     const [pendingVote, setPendingVote] = useState(null);
+    const [myVote, setMyVote] = useState(null);
 
-    const handleVoteClick = (suspect) => {
-        setPendingVote(suspect);
+    const handleVoteClick = (targetColor) => {
+        setPendingVote(targetColor);
     };
 
     const confirmVote = (e) => {
         e.stopPropagation();
-        setVotes(prev => ({
-            ...prev,
-            [playerColor]: pendingVote,
-        }));
+        setMyVote(pendingVote);
+        onSubmitVote(pendingVote);
         setPendingVote(null);
+        onClose();
     };
 
     const cancelVote = (e) => {
@@ -67,112 +67,63 @@ const Vote = ({ playerColor, onClose}) => {
                 scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
             }}
         >
-            {suspects.map((suspect) => {
-                const votedForThis = votes[playerColor] === suspect;
-                const isPending = pendingVote === suspect;
+            {players.map((player) => {
+                const votedForThis = myVote === player.color;
+                const isPending = pendingVote === player.color;
 
                 return (
                     <div
-                        key={suspect}
-                        onClick={() => handleVoteClick(suspect)}
+                        key={player.color}
+                        onClick={() => handleVoteClick(player.color)}
                         className={`relative cursor-pointer bg-white/20 p-3 rounded-xl text-white transition-all
                             ${votedForThis ? "ring-2 ring-green-400 scale-[1.02]" : "hover:bg-white/30"}
                         `}
                     >
-                    <div className="flex items-start justify-between gap-4">
-                        {/* Left side */}
-                        <div className="flex flex-col gap-2 flex-1">
-                        <div className="flex items-center gap-3">
-                            <img
-                            src={`/images/charactersHead/${suspect}.png`}
-                            className="w-12 h-12 rounded-full"
-                            />
-                            <p className="text-lg font-semibold opacity-80">{suspect}</p>
-                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                            {/* Left side */}
+                            <div className="flex flex-col gap-2 flex-1">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={`/images/charactersHead/${player.color}.png`}
+                                        className="w-12 h-12 rounded-full"
+                                    />
+                                    <p className="text-lg font-semibold opacity-80">{player.color}</p>
+                                </div>
 
-                        {/* Voters */}
-                        <div className="flex flex-wrap gap-2 pl-14">
-                            {voters
-                            .filter(voter => votes[voter] === suspect)
-                            .map(voter => (
-                                <img
-                                key={voter}
-                                src={`/images/charactersHead/${voter}.png`}
-                                className="w-8 h-8 rounded-full"
-                                />
-                            ))}
-                        </div>
-                        </div>
+                                {/* Voters */}
+                                {/* <div className="flex flex-wrap gap-2 pl-14">
+                                    {voters
+                                    .filter(voter => votes[voter] === suspect)
+                                    .map(voter => (
+                                        <img
+                                        key={voter}
+                                        src={`/images/charactersHead/${voter}.png`}
+                                        className="w-8 h-8 rounded-full"
+                                        />
+                                    ))}
+                                </div> */}
+                            </div>
 
-                        {/* Right side – confirm / cancel */}
-                        {isPending && (
-                        <div
-                            className="flex gap-2 p-5 my-auto"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <button className="text-green-400 hover:scale-110 hover:bg-white/10 rounded-xl transition" onClick={confirmVote}>
-                                <Check className="w-10 h-10" />
-                            </button>
-                            <button className="text-red-400 hover:scale-110 hover:bg-black/30 rounded-xl transition" onClick={cancelVote}>
-                                <X className="w-10 h-10" />
-                            </button>
+                            {/* Right side – confirm / cancel */}
+                            {isPending && (
+                                <div
+                                    className="flex gap-2 p-5 my-auto"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <button className="text-green-400 hover:scale-110 hover:bg-white/10 rounded-xl transition" onClick={confirmVote}>
+                                        <Check className="w-10 h-10" />
+                                    </button>
+                                    <button className="text-red-400 hover:scale-110 hover:bg-black/30 rounded-xl transition" onClick={cancelVote}>
+                                        <X className="w-10 h-10" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                        )}
-                    </div>
                     </div>
                 );
             })}
-            {/* Skip option */}
-            <div
-                onClick={() => handleVoteClick(SKIP)}
-                className={`relative cursor-pointer bg-white/20 p-3 rounded-xl text-white transition-all
-                    ${votes[playerColor] === SKIP ? "ring-2 ring-yellow-400 scale-[1.02]" : "hover:bg-white/30"}
-                `}
-            >
-                <div className="flex items-start justify-between gap-4">
-                    {/* Left side */}
-                    <div className="flex flex-col gap-2 flex-1">
-                        <p className="text-lg font-semibold opacity-80 pl-14">Skip Vote</p>
-
-                    {/* Skipped voters */}
-                    <div className="flex flex-wrap gap-2 pl-14">
-                        {voters
-                            .filter(voter => votes[voter] === SKIP)
-                            .map(voter => (
-                                <img
-                                    key={voter}
-                                    src={`/images/charactersHead/${voter}.png`}
-                                    alt={`${voter} skipped`}
-                                    className="w-8 h-8 rounded-full"
-                                />
-                        ))}
-                    </div>
-                </div>
-
-                {/* Right side – confirm / cancel */}
-                {pendingVote === SKIP && (
-                <div
-                    className="flex gap-2 p-5 my-auto"
-                    onClick={e => e.stopPropagation()}
-                >
-                    <button
-                        className="text-green-400 hover:scale-110 hover:bg-white/10 rounded-xl transition"
-                        onClick={confirmVote}
-                    >
-                        <Check className="w-10 h-10" />
-                    </button>
-                    <button
-                        className="text-red-400 hover:scale-110 hover:bg-black/30 rounded-xl transition"
-                        onClick={cancelVote}
-                    >
-                        <X className="w-10 h-10" />
-                    </button>
-                </div>
-                )}
-            </div>
         </div>
     </div>
-</div>
-)}
+)};
 
-export default Vote
+export default Vote;

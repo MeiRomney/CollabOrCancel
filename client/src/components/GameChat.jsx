@@ -1,15 +1,15 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react'
 
-const GameChat = ({ playerColor, onClose }) => {
-    const [messages, setMessages] = useState([
-        { id: 1, sender: "blue", text: "Hello everyone!", isNew: false },
-        { id: 2, sender: "green", text: "Hello", isNew: false },
-        { id: 3, sender: "pink", text: "Hello wassup", isNew: false },
-        { id: 4, sender: "orange", text: "My g", isNew: false },
-        { id: 5, sender: "yellow", text: "Lol", isNew: false },
-        { id: 6, sender: playerColor, text: "Ready for the round.", isNew: false },
-    ]);
+const GameChat = ({ playerColor, messages, typingPlayers, onSendMessage, onTyping, onClose }) => {
+    // const [messages, setMessages] = useState([
+    //     { id: 1, sender: "blue", text: "Hello everyone!", isNew: false },
+    //     { id: 2, sender: "green", text: "Hello", isNew: false },
+    //     { id: 3, sender: "pink", text: "Hello wassup", isNew: false },
+    //     { id: 4, sender: "orange", text: "My g", isNew: false },
+    //     { id: 5, sender: "yellow", text: "Lol", isNew: false },
+    //     { id: 6, sender: playerColor, text: "Ready for the round.", isNew: false },
+    // ]);
     const [input, setInput] = useState("");
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [size, setSize] = useState({ width: 600, height: 600 });
@@ -19,6 +19,7 @@ const GameChat = ({ playerColor, onClose }) => {
     const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
     const chatRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,8 +31,23 @@ const GameChat = ({ playerColor, onClose }) => {
 
     const handleSend = () => {
         if(!input.trim()) return;
-        setMessages(prev => [...prev, { id: Date.now(), sender: playerColor, text: input, isNew: true }]);
+        onSendMessage(input.trim());
         setInput("");
+        onTyping(false);
+    };
+
+    const handleInputChange = (e) => {
+        setInput(e.target.value);
+
+        if(e.target.value) {
+            onTyping(true);
+            clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+                onTyping(false);
+            }, 1000);
+        } else {
+            onTyping(false);
+        }
     };
 
     const handleMouseDown = (e) => {
@@ -121,41 +137,49 @@ const GameChat = ({ playerColor, onClose }) => {
                 scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
             }}
         >
-            {messages.map((m) => (
-                <div
-                    key={m.id}
-                    className={`max-w-[80%] flex items-start gap-2
-                            ${m.sender === playerColor ? "self-end flex-row-reverse" : "self-start"}
-                            ${m.isNew ? "animate-popIn" : ""}
-                        `}
-                    onAnimationEnd={() => {
-                        if (m.isNew) {
-                            setMessages(prev =>
-                                prev.map(msg =>
-                                    msg.id === m.id ? { ...msg, isNew: false } : msg
-                                )
-                            );
-                        }
-                    }}
-                >
-                    <img
-                        src={`/images/charactersHead/${m.sender}.png`} 
-                        alt={`${m.sender} profiles`}
-                        className='w-8 h-8 rounded-full' 
-                    />
-
-                    <div className={`px-3 py-2 rounded-xl text-white
-                        ${m.sender === playerColor
-                            ? "bg-gradient-to-r from-gray-800 to-gray-600"
-                            : "bg-white/20"
-                        }`}
-                    >
-                        <p className='text-xs opacity-70 mb-1'>{m.sender}</p>
-                        <p>{m.text}</p>
-                    </div>
-                    
+            {messages.length === 0 ? (
+                <div className='text-white/40 text-center py-8'>
+                    No messages yet. Start the conversation!
                 </div>
-            ))}
+            ) : (
+                messages.map((m, i) => (
+                    <div
+                        key={i}
+                        className={`max-w-[80%] flex items-start gap-2
+                                ${m.senderColor === playerColor ? "self-end flex-row-reverse" : "self-start"}
+                            `}
+                    >
+                        <img
+                            src={`/images/charactersHead/${m.senderColor}.png`} 
+                            alt={`${m.senderColor} profiles`}
+                            className='w-8 h-8 rounded-full' 
+                        />
+
+                        <div className={`px-3 py-2 rounded-xl text-white
+                            ${m.senderColor === playerColor
+                                ? "bg-gradient-to-r from-gray-800 to-gray-600"
+                                : "bg-white/20"
+                            }`}
+                        >
+                            <p className='text-xs opacity-70 mb-1'>{m.senderColor}</p>
+                            <p>{m.message}</p>
+                        </div>
+                    </div>
+                ))
+            )}
+
+            {typingPlayers && typingPlayers.size > 0 && (
+                <div className='text-white/60 text-sm italic'>
+                    {Array.from(typingPlayers).map((color, i) => (
+                        <span key={color}>
+                            <span className='capitalize'>{color}</span>
+                            {i < typingPlayers.size - 1 && ', '}
+                        </span>
+                    ))}
+                    {' '}{typingPlayers.size === 1 ? 'is' : 'are'} typing...
+                </div>
+            )}
+
             <div ref={messagesEndRef}/>
         </div>
 
@@ -186,7 +210,7 @@ const GameChat = ({ playerColor, onClose }) => {
             }}
         />
     </div>
-  )
-}
+  );
+};
 
-export default GameChat
+export default GameChat;

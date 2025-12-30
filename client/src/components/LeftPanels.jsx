@@ -1,6 +1,6 @@
 import React from "react";
 
-const LeftPanels = ({ playerCharacter }) => {
+const LeftPanels = ({ playerCharacter, aura, vibe, role }) => {
   return (
     <>
       {/* Round Info */}
@@ -9,13 +9,13 @@ const LeftPanels = ({ playerCharacter }) => {
           Current Round: <span className="font-bold">1</span>
         </p>
         <p className="text-2xl text-white mx-auto">
-          Overlord: <span className="font-bold">David (red)</span>
+          Collab Host: <span className="font-bold">RED</span>
         </p>
       </div>
 
       {/* Player Stats */}
       <div className="relative max-w-1/6 top-20 left-5 bg-transparent flex flex-col items-center justify-center gap-5">
-        <p className="text-3xl text-white font-bold">Player Stats</p>
+        <p className="text-3xl text-white font-bold">Your Stats</p>
 
         <div className="w-full bg-white/10 rounded-3xl">
           <div className="p-5 flex gap-5">
@@ -25,17 +25,17 @@ const LeftPanels = ({ playerCharacter }) => {
               className="w-15"
             />
             <div>
-              <p className="text-white text-xl">
-                Name: <span className="font-bold">Player name</span>
+              <p className="text-white text-xl capitalize">
+                Color: <span className="font-bold">{playerCharacter}</span>
+              </p>
+              <p className={`text-xl font-bold ${role === 'doomer' ? 'text-red-400' : 'text-blue-400'}`}>
+                Role: {role === 'doomer' ? 'Doomer' : 'Viber'}
               </p>
               <p className="text-white text-xl">
-                Role: <span className="font-bold">Viber</span>
+                Aura: <span className="font-bold">{aura}</span>
               </p>
               <p className="text-white text-xl">
-                Aura: <span className="font-bold">5</span>
-              </p>
-              <p className="text-white text-xl">
-                Vibe: <span className="font-bold">2/2</span>
+                Vibe: <span className="font-bold">{vibe}/2</span>
               </p>
             </div>
           </div>
