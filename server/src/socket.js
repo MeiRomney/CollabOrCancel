@@ -5,7 +5,10 @@ import { registerDmSockets } from "./sockets/dm.socket.js";
 
 export const setupSocket = (server) => {
     const io = new Server(server, {
-        cors: { origin: "http://localhost:5173/" },
+        cors: { 
+            origin: "http://localhost:5173",
+            methods: ["GET", "POST"]
+        },
     });
 
     io.on("connection", (socket) => {

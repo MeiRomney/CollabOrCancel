@@ -15,6 +15,8 @@ import RightPanels from "../components/RightPanels";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { useDmSocket } from "../hooks/useDmSocket";
+import PhaseTimer from "../components/PhaseTimer";
+import EventDisplay from "../components/EventDisplay";
 import { io } from "socket.io-client";
 
 const GameplayPage = () => {
@@ -492,19 +494,19 @@ const GameplayPage = () => {
 
       {/* Abilities buttons */}
       <div className="absolute bottom-0 w-full h-50 bg-transparent z-4 flex justify-center items-center gap-2">
-        {abilities.map((name, i) => {
+        {abilities.map((name, i) => (
           <button
             key={i}
             className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 active:scale-95 active:opacity-100"
             onClick={() => handleAbilityClick(name)}
-            disabled={phase !== "ACTION_PHASE" && !["chat", "dm", "note"].includes(name)}
+            disabled={phase !== "ACTION_PHASE" && !["chat", "dm", "note", "proposeCollab", "collab", "vote"].includes(name)}
           >
             <img src={`/images/${name}.png`} alt={name} className="w-10 h-10" />
             <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>
               {formatAbilityName(name)}
             </p>
           </button>
-        })}
+        ))}
       </div>
 
     </div>

@@ -85,7 +85,7 @@ export const useDmSocket = (socket, gameId, playerColor) => {
             socket.emit('send-dm-message', {
                 room: activeDm.room,
                 message,
-                sender: playerColor
+                senderColor: playerColor
             });
         }
     }, [socket, activeDm, playerColor]);

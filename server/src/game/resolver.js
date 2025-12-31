@@ -281,7 +281,7 @@ function resolveVotes(game) {
 
 // Helper function to resolve collab voting
 export function resolveCollabVoting(game) {
-    const proposals = game.collabPoposals || [];
+    const proposals = game.collabProposals || [];
 
     if(proposals.length === 0) {
         return { winningCollab: null, auraChanges: [] };

@@ -10,8 +10,8 @@ export const registerDmSockets = (io, socket) => {
 
         // Get sockets for both players
         const sockets = Array.from(io.sockets.sockets.values());
-        const fromSocket = sockets.find(s => s.data.gameId === gameId && s.data.playerColor === from);
-        const toSocket = sockets.find(s => s.data.gameId === gameId && s.data.playerColor === to);
+        const fromSocket = sockets.find(s => s.data?.gameId === gameId && s.data?.playerColor === from);
+        const toSocket = sockets.find(s => s.data?.gameId === gameId && s.data?.playerColor === to);
 
         if(fromSocket && toSocket) {
             fromSocket.join(dmRoom);

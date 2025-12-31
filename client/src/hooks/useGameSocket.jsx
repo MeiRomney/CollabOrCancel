@@ -60,7 +60,7 @@ export const useGameSocket = (gameId, playerColor) => {
         });
 
         socket.on("collab-proposed", (data) => {
-            setCollabProposals(data.collabProposals);
+            setCollabProposals(data.proposals);
         });
 
         socket.on('collab-vote-updated', (data) => {

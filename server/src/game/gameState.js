@@ -34,7 +34,7 @@ const EVENT_DECK = [
         effect: (game) => {
             const changes = [];
             Object.entries(game.abilities || {}).forEach(([color, action]) => {
-                if(action.abilities === "defend") {
+                if(action.ability === "defend") {
                     changes.push({ color, auraChanges: -0.5, reason: "Paranoia event penalty" });
                 }
             });
@@ -118,7 +118,7 @@ const EVENT_DECK = [
         description: "Player with the lowest Aura gains +2 Aura, highest loses -1 Aura",
         effect: (game) => {
             const changes = [];
-            const alive = game.players.filter(p => p.a.alive);
+            const alive = game.players.filter(p => p.alive);
             if(alive.length === 0) return changes;
 
             const lowest = alive.reduce((min, p) => p.aura < min.aura ? p : min);

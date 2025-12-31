@@ -1,4 +1,4 @@
-import { getGame, updateGame } from "../game/gameManager.js";
+import { createGame, getGame, updateGame } from "../game/gameManager.js";
 import { clearPhaseTimer, startPhaseTimer } from "../game/phaseManager.js";
 import { resolveRound, resolveCollabVoting, checkWinConditions } from "../game/resolver.js";
 
@@ -10,7 +10,15 @@ export const registerGameSockets = (io, socket) => {
         socket.data.playerId = player.id;
         socket.data.playerColor = player.color;
 
-        const game = getGame(gameId);
+        const existingGame = getGame(gameId);
+        const game = existingGame || createGame(gameId, [
+            { id: "red", color: "red" },
+            { id: "blue", color: "blue" },
+            { id: "green", color: "green" },
+            { id: "pink", color: "pink" },
+            { id: "orange", color: "orange" }
+        ]);
+
         const myPlayer = game.players.find(p => p.id === player.id);
 
         // Send game state only to the joining player (with their private info)
@@ -62,13 +70,13 @@ export const registerGameSockets = (io, socket) => {
     // Collab proposal
     socket.on("propose-collab", ({ gameId, proposerColor }) => {
         updateGame(gameId, (game) => {
-            if(!game.collabPoposals) game.collabPoposals = [];
+            if(!game.collabProposals) game.collabProposals = [];
 
             // Check if player already proposed
-            const existing = game.collabPoposals.find(p => p.proposer === proposerColor);
+            const existing = game.collabProposals.find(p => p.proposer === proposerColor);
             if(existing) return;
 
-            game.collabPoposals.push({
+            game.collabProposals.push({
                 id: `collab-${Date.now()}`,
                 proposer: proposerColor,
                 votes: [],
@@ -78,7 +86,7 @@ export const registerGameSockets = (io, socket) => {
 
         const game = getGame(gameId);
         io.to(gameId).emit("collab-proposed", {
-            proposals: game.collabPoposals,
+            proposals: game.collabProposals,
         });
     });
 
@@ -93,11 +101,11 @@ export const registerGameSockets = (io, socket) => {
                 return;
             }
 
-            const proposal = game.collabPoposals.find(p => p.id === collabId);
+            const proposal = game.collabProposals.find(p => p.id === collabId);
             if(!proposal) return;
 
             // Remove all previous votes from this player
-            game.collabPoposals.forEach(p => {
+            game.collabProposals.forEach(p => {
                 p.votes = p.votes.filter(v => v !== voterColor);
             });
 

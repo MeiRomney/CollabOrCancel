@@ -18,7 +18,7 @@ export const useChatSocket = (socket, gameId, playerColor) => {
                 setTypingPlayers(prev => {
                     const next = new Set(prev);
                     next.delete(data.playerColor);
-                    return;
+                    return next;
                 });
             }
         });
@@ -29,7 +29,7 @@ export const useChatSocket = (socket, gameId, playerColor) => {
         };
     }, [socket]);
 
-    const sendMessages = useCallback((message) => {
+    const sendMessage = useCallback((message) => {
         if(socket && gameId && playerColor) {
             socket.emit('send-message', {
                 gameId,
@@ -52,7 +52,7 @@ export const useChatSocket = (socket, gameId, playerColor) => {
     return {
         messages,
         typingPlayers,
-        sendMessages,
+        sendMessage,
         setTyping
     };
 };
