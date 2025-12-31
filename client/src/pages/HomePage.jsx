@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom';
 
 const backgroundImage = {
   backgroundImage: "url('/HomePageBackground.png')",
@@ -10,6 +11,7 @@ const backgroundImage = {
 };
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState(false);
 
   const toggleMenu = () => {
@@ -86,7 +88,12 @@ const HomePage = () => {
           BETRAYAL IS ART.
         </p>
         <div className='flex gap-10 mt-10'>
-          <button className='w-60 h-24 rounded-full bg-white items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all text-black text-2xl font-bold'>PLAY NOW</button>
+          <button 
+            className='w-60 h-24 rounded-full bg-white items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all text-black text-2xl font-bold'
+            onClick={() => navigate("/match-making")}
+          >
+            PLAY NOW
+          </button>
           <button className='w-60 h-24 rounded-full bg-red-400 items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all text-white text-2xl font-bold'>Sign Up</button>
         </div>
       </div>
