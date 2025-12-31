@@ -60,26 +60,6 @@ const GameplayPage = () => {
     setTyping
   } = useChatSocket(socket, gameId, playerColor);
 
-  // const [doomer, setDoomer] = useState(true);
-  // const [showGameStart, setShowGameStart] = useState(true);
-  // const [chat, setChat] = useState(false);
-  // const [dm, setDm] = useState(false);
-  // const [selectingDmTarget, setSelectingDmTarget] = useState(false);
-
-  // const [dmRequest, setDmRequest] = useState(null);
-  // const [dmTimer, setDmTimer] = useState(null);
-  // const [dmCountdown, setDmCountdown] = useState(10);
-
-  // const [collabRequest, setCollabRequest] = useState(null);
-  // const [collabCountdown, setCollabCountdown] = useState(10);
-  // const [collabTimer, setCollabTimer] = useState(null);
-
-  // const [collab, setCollab] = useState(false);
-  // const [vote, setVote] = useState(false);
-  // const [note, setNote] = useState(false);
-
-  // const [selectingAbility, setSelectingAbility] = useState(null);
-  // const [abilityVotes, setAbilityVotes] = useState({});
   const [showGameStart, setShowGameStart] = useState(true);
   const [chat, setChat] = useState(false);
   const [dm, setDm] = useState(false);
@@ -146,95 +126,6 @@ const GameplayPage = () => {
     return /([a-z])([A-Z])/.test(name);
   }
 
-  // const clearDmTimers = (timerObj) => {
-  //   if (!timerObj) return;
-  //   try {
-  //     if (timerObj.timeout) clearTimeout(timerObj.timeout);
-  //     if (timerObj.interval) clearInterval(timerObj.interval);
-  //   } catch (e) {
-  //     console.log(e);
-  //   }
-  // };
-
-  // const startDmRequest = ({ from, to }) => {
-  //   // If there's already an active DM request, clear it first
-  //   if (dmTimer) {
-  //     clearDmTimers(dmTimer);
-  //     setDmTimer(null);
-  //   }
-
-  //   setDmCountdown(10);
-  //   let secondsLeft = 10;
-
-  //   const interval = setInterval(() => {
-  //     secondsLeft -= 1;
-  //     setDmCountdown(secondsLeft);
-  //     if (secondsLeft <= 0) {
-  //       clearInterval(interval);
-  //     }
-  //   }, 1000);
-
-  //   const timeout = setTimeout(() => {
-  //     // expire
-  //     setDmRequest(null);
-  //     setSelectingDmTarget(false);
-  //     clearInterval(interval);
-  //     setDmTimer(null);
-  //   }, 10000);
-
-  //   setDmTimer({ timeout, interval });
-  //   setDmRequest({ from, to, expiresAt: Date.now() + 10000 });
-  // };
-
-  // const clearCollabTimers = (timerObj) => {
-  //   if(!timerObj) return;
-  //   try {
-  //     if(timerObj.timeout) clearTimeout(timerObj.timeout);
-  //     if(timerObj.interval) clearInterval(timerObj.interval);
-  //   } catch(e) {
-  //     console.log(e);
-  //   }
-  // };
-
-  // const startCollabRequest = ({ from }) => {
-  //   if(collabTimer) {
-  //     clearCollabTimers(collabTimer);
-  //     setCollabTimer(null);
-  //   }
-
-  //   setCollabCountdown(10);
-  //   let secondsLeft = 10;
-
-  //   const interval = setInterval(() => {
-  //     secondsLeft -= 1;
-  //     setCollabCountdown(secondsLeft);
-  //     if(secondsLeft <= 0) {
-  //       clearInterval(interval);
-  //     }
-  //   }, 1000);
-
-  //   const timeout = setTimeout(() => {
-  //     setCollabRequest(null);
-  //     clearInterval(interval);
-  //     setCollabTimer(null);
-  //   }, 10000);
-
-  //   setCollabTimer({ timeout, interval });
-  //   setCollabRequest({ from, startedAt: Date.now(), expiresAt: Date.now() + 10000});
-  // }
-
-  // useEffect(() => {
-  //   return () => {
-  //     clearDmTimers(dmTimer);
-  //     clearCollabTimers(collabTimer);
-  //   };
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [])
-
-  // useEffect(() => {
-  //   console.log("ABILITY VOTES UPDATED:", abilityVotes);
-  // }, [abilityVotes]);
-
   const handleAbilityClick = (abilityName) => {
     if(abilityName === "chat") {
       setChat(prev => !prev);
@@ -263,8 +154,12 @@ const GameplayPage = () => {
     }
   };
 
-  if(!myPlayer) {
-    return <div>Loading...</div>;
+  if (!myPlayer) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-black">
+        <div className="text-white text-2xl">Loading lobby...</div>
+      </div>
+    );
   }
 
   return (
