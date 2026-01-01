@@ -70,7 +70,7 @@ const GameplayPage = () => {
   const [selectingAbility, setSelectingAbility] = useState(null);
 
   // const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
-  const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
+  // const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
   const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "vote", "defend", "heal", "sabotage", "note"];
   const doomerAbilities = ["chat", "dm", "proposeCollab", "collab", "vote", "defend", "heal", "invisibleSabotage", "attack", "note"];
 
@@ -403,7 +403,6 @@ const GameplayPage = () => {
           </button>
         ))}
       </div>
-
     </div>
   );
 };
