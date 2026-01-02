@@ -50,6 +50,17 @@ export const registerGameSockets = (io, socket) => {
         });
     });
 
+    socket.on('change-color', ({ gameId, oldColor, newColor }) => {
+        updateGame(gameId, (game) => {
+            const player = game.players.find(p => p.color === oldColor);
+            if(player) {
+                player.color = newColor;
+            }
+        });
+
+        io.to(gameId).emit('player-color-changed', { oldColor, newColor });
+    });
+
     // Start game
     socket.on("start-game", ({ gameId }) => {
         updateGame(gameId, (game) => {

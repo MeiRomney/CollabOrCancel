@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import RightPanels from "../components/RightPanels";
 
 const LobbyPage = () => {
-  const navigate = useNavigate("");
+  const navigate = useNavigate();
   
   // Game setup
   const gameId = "game-123";

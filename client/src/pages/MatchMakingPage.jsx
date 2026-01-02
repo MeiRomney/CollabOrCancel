@@ -56,6 +56,19 @@ const MatchMakingPage = () => {
       setAvailableGames(games);
     });
 
+    newSocket.on('game-created', (data) => {
+      console.log('Game created:', data);
+    });
+
+    newSocket.on('game-joined', (data) => {
+      console.log('Game joined:', data);
+    });
+
+    newSocket.on('error', (error) => {
+      console.error('Socket error:', error);
+      toast.error(error.message || 'An error occurred');
+    });
+
     // Request games list on mount
     newSocket.emit('get-games-list');
 
