@@ -90,7 +90,7 @@ const HomePage = () => {
         <div className='flex gap-10 mt-10'>
           <button 
             className='w-60 h-24 rounded-full bg-white items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all text-black text-2xl font-bold'
-            onClick={() => navigate("/match-making")}
+            onClick={() => navigate("/matchmaking")}
           >
             PLAY NOW
           </button>

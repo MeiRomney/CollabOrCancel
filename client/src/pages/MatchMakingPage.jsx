@@ -56,12 +56,45 @@ const MatchMakingPage = () => {
       setAvailableGames(games);
     });
 
+    // Request games list on mount
+    newSocket.on('games-list-updated', () => {
+      newSocket.emit('get-games-list');
+    });
+
     newSocket.on('game-created', (data) => {
       console.log('Game created:', data);
+      if(data.success) {
+        toast.success('Game created! Redirecting to lobby...');
+        setTimeout(() => {
+          navigate("/lobby", {
+            state: {
+              gameId: data.gameId,
+              playerColor: selectedColor,
+              playerName,
+              isHost: true,
+              initialLobbyPlayers: data.lobby.players
+            }
+          });
+        }, 1000);
+      }
     });
 
     newSocket.on('game-joined', (data) => {
       console.log('Game joined:', data);
+      if(data.success) {
+        toast.success("Joined game! Redirecting to lobby...");
+        setTimeout(() => {
+          navigate("/lobby", {
+            state: {
+              gameId: data.gameId,
+              playerColor: selectedColor,
+              playerName,
+              isHost: false,
+              initialLobbyPlayers: data.lobby.players
+            }
+          });
+        }, 1000);
+      }
     });
 
     newSocket.on('error', (error) => {
@@ -79,9 +112,11 @@ const MatchMakingPage = () => {
 
     return () => {
       clearInterval(interval);
-      newSocket.close();
+      newSocket.off('games-created');
+      newSocket.off('game-joined');
+      newSocket.off('games-list');
     };
-  }, []);
+  }, [navigate]);
 
   const handleCreateGame = () => {
     if (!playerName.trim()) {
@@ -100,17 +135,7 @@ const MatchMakingPage = () => {
         hostColor: selectedColor
       });
 
-      // Store game info in sessionStorage for lobby page
-      sessionStorage.setItem('gameId', newGameId);
-      sessionStorage.setItem('playerColor', selectedColor);
-      sessionStorage.setItem('playerName', playerName);
-      sessionStorage.setItem('isHost', 'true');
-
-      toast.success("Game created! Redirecting to lobby...");
-      
-      setTimeout(() => {
-        navigate("/lobby");
-      }, 1000);
+      setShowCreateModal(false);
     }
   };
 
@@ -152,17 +177,8 @@ const MatchMakingPage = () => {
         playerColor: selectedColor
       });
 
-      // Store game info in sessionStorage for lobby page
-      sessionStorage.setItem('gameId', gameId);
-      sessionStorage.setItem('playerColor', selectedColor);
-      sessionStorage.setItem('playerName', playerName);
-      sessionStorage.setItem('isHost', 'false');
-
-      toast.success("Joining game...");
-      
-      setTimeout(() => {
-        navigate("/lobby");
-      }, 1000);
+      setShowJoinModal(false);
+      setGameIdInput("");
     }
   };
 

@@ -23,7 +23,7 @@ export const useGameSocket = (gameId, playerColor) => {
 
         socket.on('connect', () => {
             console.log("Connected to game server");
-            socket.emit("join-game", {
+            socket.emit("join-gameplay", {
                 gameId, 
                 player: { id: playerColor, color: playerColor }
             });

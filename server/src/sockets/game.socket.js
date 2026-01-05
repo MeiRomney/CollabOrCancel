@@ -4,7 +4,7 @@ import { resolveRound, resolveCollabVoting, checkWinConditions } from "../game/r
 
 export const registerGameSockets = (io, socket) => {
     // Player joins game
-    socket.on("join-game", ({ gameId, player }) => {
+    socket.on("join-gameplay", ({ gameId, player }) => {
         socket.join(gameId);
         socket.data.gameId = gameId;
         socket.data.playerId = player.id;
@@ -62,13 +62,19 @@ export const registerGameSockets = (io, socket) => {
     });
 
     // Start game
-    socket.on("start-game", ({ gameId }) => {
+    socket.on("start-gameplay", ({ gameId }) => {
+        const game = getGame(gameId);
+        if(!game) {
+            socket.emit('error', { message: 'Game not found!' });
+            return;
+        }
+
         updateGame(gameId, (game) => {
             game.phase = "COLLAB_PROPOSAL";
             game.phaseTimer = Date.now() + 60000;
         });
-
-        const game = getGame(gameId);
+        
+        const updatedGame = getGame(gameId);
         io.to(gameId).emit("phase-changed", {
             phase: "COLLAB_PROPOSAL",
             timer: game.phaseTimer

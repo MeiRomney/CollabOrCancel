@@ -6,43 +6,30 @@ import GameChat from "../components/GameChat";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { io } from "socket.io-client";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import RightPanels from "../components/RightPanels";
+import { useEffect } from "react";
 
 const LobbyPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
-  // Game setup
-  const gameId = "game-123";
-  const [playerColor, setPlayerColor] = useState("red");
+  // Get lobby info from navigation state
+  const { 
+    gameId, 
+    playerColor: initialColor, 
+    playerName, 
+    isHost,
+    initialLobbyPlayers = []
+  } = location.state || {};
 
-  // Socket hooks
-  const {
-    phase,
-    round,
-    phaseTimer,
-    myPlayer,
-    otherPlayers,
-    currentEvent,
-    collabProposals,
-    proposeCollab,
-    voteCollab,
-    submitAbility,
-    submitVote,
-    saveNote,
-  } = useGameSocket(gameId, playerColor);
 
-  const socket = io('http://localhost:3001');
-
-  const {
-    messages: chatMessages,
-    typingPlayers,
-    sendMessage,
-    setTyping
-  } = useChatSocket(socket, gameId, playerColor);
-
+  const [socket, setSocket] = useState(null);
+  const [playerColor, setPlayerColor] = useState(initialColor || "red");
   const [chat, setChat] = useState(false);
-  const [host, setHost] = useState(false);
+  const [lobbyPlayers, setLobbyPlayers] = useState(initialLobbyPlayers);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [typingPlayers, setTypingPlayers] = useState(new Set());
 
   const allColors = [
     { name: "red", hex: "#ef4444" },
@@ -85,8 +72,89 @@ const LobbyPage = () => {
     { top: "60%", left: "75%" },
   ];
 
+  // Initialize socket and lobby listeners
+  useEffect(() => {
+    if(!gameId) {
+      toast.error("No game ID found! Redirecting...");
+      navigate("/matchmaking");
+      return;
+    }
+
+    const newSocket = io('http://localhost:3001');
+    setSocket(newSocket);
+
+    // Player joined lobby event
+    newSocket.on('player-joined-lobby', (data) => {
+      toast.success(`${data.player.name} joined the lobby!`);
+      setLobbyPlayers(prev => [...prev, data.player]);
+    });
+
+    // Player left lobby event
+    newSocket.on('player-left-lobby', (data) => {
+      toast(`${data.playerName} left the lobby`);
+      setLobbyPlayers(prev => prev.filter(p => p.id !== data.playerId));
+    });
+
+    // New host assigned
+    newSocket.on('new-host', (data) => {
+      toast.success(`${data.hostName} is now the host!`);
+    });
+
+    // Player color changed
+    newSocket.on('player-color-changed', (data) => {
+      setLobbyPlayers(prev => 
+        prev.map(p => 
+          p.id === data.playerId
+            ? { ...p, color: data.newColor }
+            : p
+        )
+      );
+
+      if(data.playerName !== playerName) {
+        toast(`${data.playerName} changed color to ${data.newColor}`);
+      }
+    });
+
+    // Game starting 
+    newSocket.on('game-starting', (data) => {
+      toast.success("Game is starting!");
+      setTimeout(() => {
+        navigate("/gameplay");
+      }, 2000);
+    });
+
+    // Chat messages
+    newSocket.on('message-received', (data) => {
+      setChatMessages(prev => [...prev, data]);
+    });
+
+    newSocket.on('player-typing', (data) => {
+      if(data.isTyping) {
+        setTypingPlayers(prev => new Set([...prev, data.playerColor]));
+      } else {
+        setTypingPlayers(prev => {
+          const next = new Set(prev);
+          next.delete(data.playerColor);
+          return next;
+        });
+      }
+    });
+
+    newSocket.on('error', (error) => {
+      toast.error(error.message);
+    });
+
+    return () => {
+      // Leave lobby on unmount
+      if(gameId) {
+        newSocket.emit('leave-lobby', { gameId });
+      }
+      newSocket.close();
+    };
+  }, [gameId, navigate, playerName]);
+
   // Get list of taken colors from other players
-  const takenColors = otherPlayers ? otherPlayers.map(p => p.color) : [];
+  const takenColors = lobbyPlayers.map(p => p.color);
 
   // Handle color selection
   const handleColorSelect = (colorName) => {
@@ -102,19 +170,45 @@ const LobbyPage = () => {
     setPlayerColor(colorName);
     toast.success(`Color changed to ${colorName}!`);
     
-    // Emit color change to server (you'll need to add this socket event)
-    if (socket) {
-      socket.emit('change-color', { gameId, oldColor: playerColor, newColor: colorName });
+    // Emit color change to server
+    if (socket && gameId) {
+      socket.emit('change-color', { gameId, newColor: colorName });
     }
   };
 
-  if (!myPlayer) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="text-white text-2xl">Loading lobby...</div>
-      </div>
-    );
-  }
+  const handleStartGame = () => {
+    if(!isHost) {
+      toast.error("Only the host can start the game!");
+      return;
+    }
+
+    if(socket && gameId) {
+      socket.emit('start-game', { gameId });
+    }
+  };
+
+  const sendMessage = (message) => {
+    if(socket && gameId && playerColor) {
+      socket.emit('send-message', {
+        gameId, 
+        message,
+        senderColor: playerColor
+      });
+    }
+  };
+
+  const setTyping = (isTyping) => {
+    if(socket && gameId && playerColor) {
+      socket.emit('typing', {
+        gameId, 
+        playerColor,
+        isTyping
+      });
+    }
+  };
+
+  // Get other players (excluding self)
+  const otherPlayers = lobbyPlayers.filter(p => p.color !== playerColor);
 
   return (
     <div style={backgroundStyle}>
@@ -207,7 +301,7 @@ const LobbyPage = () => {
         );
       })}
 
-        {host
+        {isHost
         ? (
             <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
                 Click <span className="font-bold">Start</span> when you're ready
@@ -220,17 +314,25 @@ const LobbyPage = () => {
         )}
 
       {/* Lobby Info */}
-      <div className="absolute w-80 h-30 top-5 left-5 rounded-3xl bg-black/30 backdrop-blur-md border-white border-2 flex flex-col justify-center items-center p-4">
+      <div className="absolute w-80 top-5 left-5 rounded-3xl bg-black/30 backdrop-blur-md border-white border-2 flex flex-col justify-center items-center p-4">
         <p className="text-2xl text-white">
-          Current Round: <span className="font-bold">0</span>
+          Waiting for players...
         </p>
-        <p className="text-2xl text-white">
-          Lobby Host: <span className="font-bold uppercase">{host ? playerColor : "Unknown"}</span>
+        <p className="text-2xl text-white mt-2">
+          <span className="font-bold">{lobbyPlayers.length}/8</span> Players
+        </p>
+        {isHost && (
+          <p className="text-2xl text-green-400 mt-2 font-bold">
+            👑 You are the host
+          </p>
+        )}
+        <p className="text-2xl text-white/60 mt-2">
+          Game ID: {gameId?.substring(5, 17)}
         </p>
       </div>
 
       {/* Color Selection Panel */}
-      <div className="absolute left-5 top-36 w-80 bg-black/30 backdrop-blur-md border-white border-2 rounded-3xl flex flex-col p-5 gap-3">
+      <div className="absolute left-5 top-60 w-80 bg-black/30 backdrop-blur-md border-white border-2 rounded-3xl flex flex-col p-5 gap-3">
         <h3 className="text-white text-xl font-bold text-center mb-2">
           Select Your Color
         </h3>
@@ -316,23 +418,11 @@ const LobbyPage = () => {
           <p className="text-white text-lg mt-1">CHAT</p>
         </button>
 
-        {host && (
+        {isHost && (
           <button
             className="w-28 h-28 rounded-full bg-green-600/80 border-white border-2 flex items-center justify-center flex-col cursor-pointer transition-all duration-300 hover:scale-110 hover:bg-green-600 active:scale-95"
-            onClick={() => {
-              // Check if enough players
-              if (otherPlayers.length < 1) {
-                toast.error('Need at least 2 players to start!');
-                return;
-              }
-              
-              // Emit start game event
-              if (socket) {
-                socket.emit('start-game', { gameId });
-              }
-              
-              navigate("/gameplay");
-            }}
+            onClick={handleStartGame}
+            // disabled={lobbyPlayers.length < 1}
           >
             <img src="/images/start.png" alt="start" className="w-10 h-10" />
             <p className="text-white text-lg mt-1 font-bold">START</p>
@@ -341,7 +431,12 @@ const LobbyPage = () => {
 
         <button
           className="w-28 h-28 rounded-full bg-red-600/80 border-white border-2 flex items-center justify-center flex-col cursor-pointer transition-all duration-300 hover:scale-110 hover:bg-red-600 active:scale-95"
-          onClick={() => navigate("/")}
+          onClick={() => {
+            if(socket && gameId) {
+              socket.emit('leave-lobby', { gameId });
+            }
+            navigate("/matchmaking");
+          }}
         >
           <img src="/images/leave.png" alt="leave" className="w-10 h-10" />
           <p className="text-white text-lg mt-1">LEAVE</p>

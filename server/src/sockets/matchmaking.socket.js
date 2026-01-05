@@ -1,4 +1,4 @@
-import { createGame } from "../game/gameManager";
+import { createGame } from "../game/gameManager.js";
 
 const activeLobbies = new Map();
 
@@ -48,7 +48,7 @@ export const registerMatchmakingSockets = (io,socket) => {
         socket.data.isHost = true;
 
         // Emit success
-        socket.on('game-created', {
+        socket.emit('game-created', {
             success: true,
             gameId, 
             lobby
@@ -156,14 +156,21 @@ export const registerMatchmakingSockets = (io,socket) => {
 
     // Start the game (host only)
     socket.on('start-game', ({ gameId }) => {
+        console.log('🎮 MATCHMAKING start-game called for:', gameId);
+        console.log('🎮 Active lobbies:', Array.from(activeLobbies.keys()));
         const lobby = activeLobbies.get(gameId);
 
         if(!lobby) {
+            console.log('❌ Lobby not found in activeLobbies!');
             socket.emit('error', { message: 'Game not found!' });
             return;
         }
+        console.log('✅ Lobby found:', lobby);
+        console.log('🔍 Socket ID:', socket.id);
+        console.log('🔍 Host ID:', lobby.hostId);
 
         if(socket.id !== lobby.hostId) {
+            console.log('❌ Not the host!');
             socket.emit('error', { message: 'Only the host can start the game!' });
             return;
         }
