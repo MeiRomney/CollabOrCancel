@@ -3,16 +3,15 @@ import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import BackgroundImage from "/images/gameplayBackground.png";
 import GameChat from "../components/GameChat";
-import { useGameSocket } from "../hooks/useGameSocket";
-import { useChatSocket } from "../hooks/useChatSocket";
-import { io } from "socket.io-client";
 import { useLocation, useNavigate } from "react-router-dom";
 import RightPanels from "../components/RightPanels";
 import { useEffect } from "react";
+import { useSocket } from "../contexts/SocketContext";
 
 const LobbyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const socket = useSocket();
   
   // Get lobby info from navigation state
   const { 
@@ -24,7 +23,7 @@ const LobbyPage = () => {
   } = location.state || {};
 
 
-  const [socket, setSocket] = useState(null);
+  // const [socket, setSocket] = useState(null);
   const [playerColor, setPlayerColor] = useState(initialColor || "red");
   const [chat, setChat] = useState(false);
   const [lobbyPlayers, setLobbyPlayers] = useState(initialLobbyPlayers);
@@ -72,7 +71,6 @@ const LobbyPage = () => {
     { top: "60%", left: "75%" },
   ];
 
-  // Initialize socket and lobby listeners
   useEffect(() => {
     if(!gameId) {
       toast.error("No game ID found! Redirecting...");
@@ -80,28 +78,22 @@ const LobbyPage = () => {
       return;
     }
 
-    const newSocket = io('http://localhost:3001');
-    setSocket(newSocket);
+    if(!socket) return;
 
-    // Player joined lobby event
-    newSocket.on('player-joined-lobby', (data) => {
+    let isComponentMounted = true;
+
+    const handlePlayerJoinedLobby = (data) => {
       toast.success(`${data.player.name} joined the lobby!`);
       setLobbyPlayers(prev => [...prev, data.player]);
-    });
-
-    // Player left lobby event
-    newSocket.on('player-left-lobby', (data) => {
+    };
+    const handlePlayerLeftLobby = (data) => {
       toast(`${data.playerName} left the lobby`);
       setLobbyPlayers(prev => prev.filter(p => p.id !== data.playerId));
-    });
-
-    // New host assigned
-    newSocket.on('new-host', (data) => {
+    };
+    const handleNewHost = (data) => {
       toast.success(`${data.hostName} is now the host!`);
-    });
-
-    // Player color changed
-    newSocket.on('player-color-changed', (data) => {
+    };
+    const handlePlayerColorChanged = (data) => {
       setLobbyPlayers(prev => 
         prev.map(p => 
           p.id === data.playerId
@@ -113,22 +105,17 @@ const LobbyPage = () => {
       if(data.playerName !== playerName) {
         toast(`${data.playerName} changed color to ${data.newColor}`);
       }
-    });
-
-    // Game starting 
-    newSocket.on('game-starting', (data) => {
+    };
+    const handleStartGameplay = () => {
       toast.success("Game is starting!");
       setTimeout(() => {
         navigate("/gameplay");
       }, 2000);
-    });
-
-    // Chat messages
-    newSocket.on('message-received', (data) => {
+    };
+    const handleMessageReceived = (data) => {
       setChatMessages(prev => [...prev, data]);
-    });
-
-    newSocket.on('player-typing', (data) => {
+    };
+    const handlePlayerTyping = (data) => {
       if(data.isTyping) {
         setTypingPlayers(prev => new Set([...prev, data.playerColor]));
       } else {
@@ -138,20 +125,46 @@ const LobbyPage = () => {
           return next;
         });
       }
-    });
-
-    newSocket.on('error', (error) => {
+    };
+    const handleError = (error) => {
       toast.error(error.message);
-    });
+    };
+
+    socket.on('player-joined-lobby', handlePlayerJoinedLobby);
+    socket.on('player-left-lobby', handlePlayerLeftLobby);
+    socket.on('new-host', handleNewHost);
+    socket.on('player-color-changed', handlePlayerColorChanged);
+    socket.on('game-starting', handleStartGameplay);
+    socket.on('message-received', handleMessageReceived);
+    socket.on('player-typing', handlePlayerTyping);
+    socket.on('error', handleError);
 
     return () => {
-      // Leave lobby on unmount
-      if(gameId) {
-        newSocket.emit('leave-lobby', { gameId });
-      }
-      newSocket.close();
+      isComponentMounted = false;
+
+      socket.off('player-joined-lobby', handlePlayerJoinedLobby);
+      socket.off('player-left-lobby', handlePlayerLeftLobby);
+      socket.off('new-host', handleNewHost);
+      socket.off('player-color-changed', handlePlayerColorChanged);
+      socket.off('game-starting', handleStartGameplay);
+      socket.off('message-received', handleMessageReceived);
+      socket.off('player-typing', handlePlayerTyping);
+      socket.off('error', handleError);
     };
-  }, [gameId, navigate, playerName]);
+  }, [socket, gameId, navigate, playerName]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if(socket && gameId) {
+        socket.emit('leave-lobby', { gameId });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [socket, gameId]);
 
   // Get list of taken colors from other players
   const takenColors = lobbyPlayers.map(p => p.color);

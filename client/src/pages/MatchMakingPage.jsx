@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import BackgroundImage from "/images/matchMakingBackground.png";
-import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../contexts/SocketContext";
 
 const MatchMakingPage = () => {
   const navigate = useNavigate();
+  const socket = useSocket();
   
-  const [socket, setSocket] = useState(null);
+  // const [socket, setSocket] = useState(null);
   const [playerName, setPlayerName] = useState("");
   const [gameIdInput, setGameIdInput] = useState("");
   const [availableGames, setAvailableGames] = useState([]);
@@ -46,22 +47,90 @@ const MatchMakingPage = () => {
     position: "relative",
   };
 
-  // Initialize socket connection
+  // // Initialize socket connection
+  // useEffect(() => {
+  //   const newSocket = io('http://localhost:3001');
+  //   setSocket(newSocket);
+
+  //   // Listen for available games list
+  //   newSocket.on('games-list', (games) => {
+  //     setAvailableGames(games);
+  //   });
+
+  //   // Request games list on mount
+  //   newSocket.on('games-list-updated', () => {
+  //     newSocket.emit('get-games-list');
+  //   });
+
+  //   newSocket.on('game-created', (data) => {
+  //     console.log('Game created:', data);
+  //     if(data.success) {
+  //       toast.success('Game created! Redirecting to lobby...');
+  //       setTimeout(() => {
+  //         navigate("/lobby", {
+  //           state: {
+  //             gameId: data.gameId,
+  //             playerColor: selectedColor,
+  //             playerName,
+  //             isHost: true,
+  //             initialLobbyPlayers: data.lobby.players
+  //           }
+  //         });
+  //       }, 1000);
+  //     }
+  //   });
+
+  //   newSocket.on('game-joined', (data) => {
+  //     console.log('Game joined:', data);
+  //     if(data.success) {
+  //       toast.success("Joined game! Redirecting to lobby...");
+  //       setTimeout(() => {
+  //         navigate("/lobby", {
+  //           state: {
+  //             gameId: data.gameId,
+  //             playerColor: selectedColor,
+  //             playerName,
+  //             isHost: false,
+  //             initialLobbyPlayers: data.lobby.players
+  //           }
+  //         });
+  //       }, 1000);
+  //     }
+  //   });
+
+  //   newSocket.on('error', (error) => {
+  //     console.error('Socket error:', error);
+  //     toast.error(error.message || 'An error occurred');
+  //   });
+
+  //   // Request games list on mount
+  //   newSocket.emit('get-games-list');
+
+  //   // Refresh games list every 3 seconds
+  //   const interval = setInterval(() => {
+  //     newSocket.emit('get-games-list');
+  //   }, 3000);
+
+  //   return () => {
+  //     clearInterval(interval);
+  //     newSocket.off('game-created');
+  //     newSocket.off('game-joined');
+  //     newSocket.off('games-list');
+  //   };
+  // }, [navigate]);
+
   useEffect(() => {
-    const newSocket = io('http://localhost:3001');
-    setSocket(newSocket);
+    if(!socket) return;
 
-    // Listen for available games list
-    newSocket.on('games-list', (games) => {
+    const handleGamesList = (games) => {
       setAvailableGames(games);
-    });
+    };
 
-    // Request games list on mount
-    newSocket.on('games-list-updated', () => {
-      newSocket.emit('get-games-list');
-    });
+    const handleGamesListUpdated = () => {
+      socket.emit('get-games-list');
+    };
 
-    newSocket.on('game-created', (data) => {
+    const handleGameCreated = (data) => {
       console.log('Game created:', data);
       if(data.success) {
         toast.success('Game created! Redirecting to lobby...');
@@ -77,12 +146,12 @@ const MatchMakingPage = () => {
           });
         }, 1000);
       }
-    });
+    };
 
-    newSocket.on('game-joined', (data) => {
+    const handleGameJoined = (data) => {
       console.log('Game joined:', data);
       if(data.success) {
-        toast.success("Joined game! Redirecting to lobby...");
+        toast.success('Joined game! Redirecting to lobby...');
         setTimeout(() => {
           navigate("/lobby", {
             state: {
@@ -95,28 +164,37 @@ const MatchMakingPage = () => {
           });
         }, 1000);
       }
-    });
+    };
 
-    newSocket.on('error', (error) => {
-      console.error('Socket error:', error);
+    const handleError = (error) => {
+      console.log('Socket error:', error);
       toast.error(error.message || 'An error occurred');
-    });
+    };
 
-    // Request games list on mount
-    newSocket.emit('get-games-list');
+    // Register listeners
+    socket.on('games-list', handleGamesList);
+    socket.on('games-list-updated', handleGamesListUpdated);
+    socket.on('game-created', handleGameCreated);
+    socket.on('game-joined', handleGameJoined);
+    socket.on('error', handleError);
+
+    // Request games list
+    socket.emit('get-games-list');
 
     // Refresh games list every 3 seconds
     const interval = setInterval(() => {
-      newSocket.emit('get-games-list');
+      socket.emit('get-games-list');
     }, 3000);
 
     return () => {
       clearInterval(interval);
-      newSocket.off('games-created');
-      newSocket.off('game-joined');
-      newSocket.off('games-list');
+      socket.off('games-list', handleGamesList);
+      socket.off('games-list-updated', handleGamesListUpdated);
+      socket.off('game-created', handleGameCreated);
+      socket.off('game-joined', handleGameJoined);
+      socket.off('error', handleError);
     };
-  }, [navigate]);
+  }, [socket, navigate, selectedColor, playerName]);
 
   const handleCreateGame = () => {
     if (!playerName.trim()) {

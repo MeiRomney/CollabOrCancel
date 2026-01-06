@@ -156,48 +156,71 @@ export const registerMatchmakingSockets = (io,socket) => {
 
     // Start the game (host only)
     socket.on('start-game', ({ gameId }) => {
-        console.log('🎮 MATCHMAKING start-game called for:', gameId);
-        console.log('🎮 Active lobbies:', Array.from(activeLobbies.keys()));
-        const lobby = activeLobbies.get(gameId);
+        try {
+            console.log('🎮 MATCHMAKING start-game called for:', gameId);
+            console.log('🎮 Active lobbies:', Array.from(activeLobbies.keys()));
+            const lobby = activeLobbies.get(gameId);
 
-        if(!lobby) {
-            console.log('❌ Lobby not found in activeLobbies!');
-            socket.emit('error', { message: 'Game not found!' });
-            return;
+            if(!lobby) {
+                console.log('❌ Lobby not found in activeLobbies!');
+                socket.emit('error', { message: 'Game not found!' });
+                return;
+            }
+            console.log('✅ Lobby found:', lobby);
+            console.log('🔍 Socket ID:', socket.id);
+            console.log('🔍 Host ID:', lobby.hostId);
+
+            if(socket.id !== lobby.hostId) {
+                console.log('❌ Not the host!');
+                socket.emit('error', { message: 'Only the host can start the game!' });
+                return;
+            }
+
+            // AUTO-ADD BOTS FOR TESTING (IF LESS THAN 2 PLAYERS)
+            const botColors = ['blue', 'pink', 'green', 'orange', 'yellow'];
+            while(lobby.players.length < 2) {
+                const availableColor = botColors.find(c => !lobby.players.some(p => p.color === c));
+                if(!availableColor) break;
+
+                lobby.players.push({
+                    id: `bot-${Date.now()}-${Math.random()}`,
+                    name: `Bot ${lobby.players.length}`,
+                    color: availableColor,
+                    isHost: false,
+                    isBot: true
+                });
+
+                console.log(`Added bot player: ${availableColor}`);
+            }
+
+            // Mark lobby as started
+            lobby.status = 'started';
+
+            // Create actual game state
+            createGame(gameId, lobby.players.map(p => ({
+                id: p.color,
+                color: p.color,
+                name: p.name
+            })));
+
+            // Notify all players to transition to gameplay
+            io.to(gameId).emit('game-starting', {
+                gameId,
+                players: lobby.players
+            });
+
+            // Remove from active lobbies after a short delay
+            setTimeout(() => {
+                activeLobbies.delete(gameId);
+                io.emit('games-list-updated');
+            }, 2000);
+
+            console.log(`Game ${gameId} started with ${lobby.players.length} players`);
+        } catch(error) {
+            console.error('❌ Error starting game:', error);
+            socket.emit('error', { message: 'Failed to start game:' + error.message });
         }
-        console.log('✅ Lobby found:', lobby);
-        console.log('🔍 Socket ID:', socket.id);
-        console.log('🔍 Host ID:', lobby.hostId);
-
-        if(socket.id !== lobby.hostId) {
-            console.log('❌ Not the host!');
-            socket.emit('error', { message: 'Only the host can start the game!' });
-            return;
-        }
-
-        // Mark lobby as started
-        lobby.status = 'started';
-
-        // Create actual game state
-        createGame(gameId, lobby.players.map(p => ({
-            id: p.color,
-            color: p.color,
-            name: p.name
-        })));
-
-        // Notify all players to transition to gameplay
-        io.to(gameId).emit('game-starting', {
-            gameId,
-            players: lobby.players
-        });
-
-        // Remove from active lobbies after a short delay
-        setTimeout(() => {
-            activeLobbies.delete(gameId);
-            io.emit('games-list-updated');
-        }, 2000);
-
-        console.log(`Game ${gameId} started with ${lobby.players.length} players`);
+        
     });
 
     // Leave lobby
