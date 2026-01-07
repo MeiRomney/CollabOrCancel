@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from 'react-router-dom';
 import { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import BackgroundImage from "/images/gameplayBackground.png";
 import GameChat from "../components/GameChat";
 import Dm from "../components/Dm";
@@ -17,12 +19,17 @@ import { useChatSocket } from "../hooks/useChatSocket";
 import { useDmSocket } from "../hooks/useDmSocket";
 import PhaseTimer from "../components/PhaseTimer";
 import EventDisplay from "../components/EventDisplay";
-import { io } from "socket.io-client";
+import { useSocket } from "../contexts/SocketContext";
 
 const GameplayPage = () => {
-  // Game setup
-  const gameId = "game-123";
-  const playerColor = "red";
+  // Game setup - read from navigation state (fallback to defaults)
+  const location = useLocation();
+  const { gameId: navGameId, playerColor: navPlayerColor, initialLobbyPlayers = [], playerName } = location.state || {};
+  const gameId = navGameId || "game-123";
+  const playerColor = navPlayerColor || "red";
+
+  // Get shared socket from context
+  const socket = useSocket();
 
   // Socket hooks
   const {
@@ -38,9 +45,7 @@ const GameplayPage = () => {
     submitAbility,
     submitVote,
     saveNote,
-  } = useGameSocket(gameId, playerColor);
-
-  const socket = io('http://localhost:3001');
+  } = useGameSocket(socket, gameId, playerColor);
 
   const {
     dmRequests,
@@ -68,6 +73,9 @@ const GameplayPage = () => {
   const [vote, setVote] = useState(false);
   const [note, setNote] = useState(false);
   const [selectingAbility, setSelectingAbility] = useState(null);
+  const [collabRequest, setCollabRequest] = useState(null);
+  const [collabTimer, setCollabTimer] = useState(null);
+  const [collabCountdown, setCollabCountdown] = useState(10);
 
   // const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
   // const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
@@ -77,6 +85,19 @@ const GameplayPage = () => {
   // const playerCharacter = characterColors[0];
   // const otherCharacters = characterColors.slice(1);
   const abilities = myPlayer?.role === "doomer" ? doomerAbilities : viberAbilities;
+
+  // Determine which abilities should be visible in the current phase
+  const visibleAbilities = (() => {
+    const phaseVisibility = {
+      "COLLAB_PROPOSAL": ["chat", "proposeCollab", "vote", "note"],
+      "COLLAB_VOTING": ["chat", "collab", "vote", "note"],
+      "DM_PHASE": ["chat", "dm", "vote", "note"],
+      "ACTION_PHASE": ["chat", "vote", "defend", "heal", "sabotage", "invisibleSabotage", "attack", "note"],
+    };
+    
+    const visibleForPhase = phaseVisibility[phase] || [];
+    return abilities.filter(a => visibleForPhase.includes(a));
+  })();
 
   const backgroundStyle = {
     backgroundImage: `url(${BackgroundImage})`,
@@ -126,13 +147,30 @@ const GameplayPage = () => {
     return /([a-z])([A-Z])/.test(name);
   }
 
+  const clearCollabTimers = (timerId) => {
+    if(timerId) clearInterval(timerId);
+  };
+
   const handleAbilityClick = (abilityName) => {
     if(abilityName === "chat") {
       setChat(prev => !prev);
     } else if(abilityName === "dm") {
       setSelectingDmTarget(prev => !prev);
     } else if(abilityName === "proposeCollab") {
-      proposeCollab();
+      // Show collab request confirmation
+      setCollabRequest({ from: playerColor });
+      setCollabCountdown(10);
+      const timerId = setInterval(() => {
+        setCollabCountdown(prev => {
+          if(prev <= 1) {
+            clearInterval(timerId);
+            setCollabRequest(null);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      setCollabTimer(timerId);
     } else if(abilityName === "collab") {
       setCollab(prev => !prev);
     } else if(["defend", "heal", "sabotage", "invisibleSabotage", "attack"].includes(abilityName)) {
@@ -151,6 +189,7 @@ const GameplayPage = () => {
     } else if(selectingDmTarget) {
       requestDm(targetColor);
       setSelectingDmTarget(false);
+      toast.success(`DM request sent to ${targetColor}!`);
     }
   };
 
@@ -349,6 +388,19 @@ const GameplayPage = () => {
         />
       ))}
 
+      {collabRequest && (
+        <CollabRequest
+          collabRequest={collabRequest}
+          collabCountdown={collabCountdown}
+          playerCharacter={playerColor}
+          collabTimer={collabTimer}
+          clearCollabTimers={clearCollabTimers}
+          setCollabTimer={setCollabTimer}
+          setCollabRequest={setCollabRequest}
+          onConfirm={proposeCollab}
+        />
+      )}
+
       {collab && phase === 'COLLAB_VOTING' && (
         <CollabVote 
           playerColor={playerColor}
@@ -389,11 +441,12 @@ const GameplayPage = () => {
 
       {/* Abilities buttons */}
       <div className="absolute bottom-0 w-full h-50 bg-transparent z-4 flex justify-center items-center gap-2">
-        {abilities.map((name, i) => (
+        {visibleAbilities.map((name, i) => (
           <button
             key={i}
             className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 active:scale-95 active:opacity-100"
             onClick={() => handleAbilityClick(name)}
+            // visibleAbilities already filters by phase; still guard interactions if needed
             disabled={phase !== "ACTION_PHASE" && !["chat", "dm", "note", "proposeCollab", "collab", "vote"].includes(name)}
           >
             <img src={`/images/${name}.png`} alt={name} className="w-10 h-10" />
@@ -408,3 +461,4 @@ const GameplayPage = () => {
 };
 
 export default GameplayPage;
+

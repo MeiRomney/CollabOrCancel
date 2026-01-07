@@ -1,10 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { io } from "socket.io-client";
 import { toast } from "react-hot-toast";
 
-let socket = null;
-
-export const useGameSocket = (gameId, playerColor) => {
+export const useGameSocket = (socket, gameId, playerColor) => {
     const [gameState, setGameState] = useState(null);
     const [phase, setPhase] = useState('STARTING');
     const [round, setRound] = useState(1);
@@ -17,16 +14,11 @@ export const useGameSocket = (gameId, playerColor) => {
 
     // Initialize socket connection
     useEffect(() => {
-        if(!gameId || !playerColor) return;
+        if(!socket || !gameId || !playerColor) return;
 
-        socket = io('http://localhost:3001');
-
-        socket.on('connect', () => {
-            console.log("Connected to game server");
-            socket.emit("join-gameplay", {
-                gameId, 
-                player: { id: playerColor, color: playerColor }
-            });
+        socket.emit("join-gameplay", {
+            gameId, 
+            player: { id: playerColor, color: playerColor }
         });
 
         socket.on("game-state", (state) => {
@@ -140,46 +132,60 @@ export const useGameSocket = (gameId, playerColor) => {
             toast(`${data.playerColor} joined game`);
         });
 
+        socket.on('note-saved', (data) => {
+            // Update myPlayer.note when saved successfully
+            setMyPlayer(prev => {
+                if(!prev) return prev;
+                return { ...prev, note: data.note };
+            });
+        });
+
         return () => {
-            if(socket) {
-                socket.disconnect();
-                socket = null;
-            }
+            socket.off("game-state");
+            socket.off('phase-changed');
+            socket.off("collab-proposed");
+            socket.off('collab-vote-updated');
+            socket.off("collab-resolved");
+            socket.off("event-drawn");
+            socket.off("round-resolved");
+            socket.off("game-over");
+            socket.off('player-joined');
+            socket.off('note-saved');
         };
-    }, [gameId, playerColor]);
+    }, [socket, gameId, playerColor]);
 
     // Actions
     const proposeCollab = useCallback(() => {
         if(socket && gameId && playerColor) {
             socket.emit('propose-collab', { gameId, proposerColor: playerColor });
         }
-    }, [gameId, playerColor]);
+    }, [socket, gameId, playerColor]);
 
     const voteCollab = useCallback((collabId) => {
         if(socket && gameId && playerColor) {
             socket.emit("vote-collab", {gameId, collabId, voterColor: playerColor});
         }
-    }, [gameId, playerColor]);
+    }, [socket, gameId, playerColor]);
 
     const submitAbility = useCallback((ability, target) => {
         if(socket && gameId && playerColor) {
             socket.emit('submit-ability', { gameId, ability, target, playerColor });
             toast.success(`${ability} action submitted`);
         }
-    }, [gameId, playerColor]);
+    }, [socket, gameId, playerColor]);
 
     const submitVote = useCallback((target) => {
         if(socket && gameId && playerColor) {
             socket.emit('submit-vote', { gameId, target, voterColor: playerColor });
             toast.success("Vote submitted");
         }
-    }, [gameId, playerColor]);
+    }, [socket, gameId, playerColor]);
 
     const saveNote = useCallback((note) => {
         if(socket && gameId && playerColor) {
             socket.emit('save-note', { gameId, playerColor, note });
         }
-    }, [gameId, playerColor]);
+    }, [socket, gameId, playerColor]);
 
     return {
         gameState,

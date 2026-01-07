@@ -8,7 +8,8 @@ const CollabRequest = ({
   collabTimer, 
   clearCollabTimers, 
   setCollabTimer, 
-  setCollabRequest 
+  setCollabRequest,
+  onConfirm
 }) => {
   
   if(!collabRequest || collabRequest.from !== playerCharacter) return null;
@@ -36,6 +37,7 @@ const CollabRequest = ({
                   setCollabTimer(null);
                 }
                 setCollabRequest(null);
+                  if(onConfirm) onConfirm();
                 toast.success("Collab proposed");
             }}  
           >

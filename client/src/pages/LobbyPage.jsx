@@ -108,8 +108,14 @@ const LobbyPage = () => {
     };
     const handleStartGameplay = () => {
       toast.success("Game is starting!");
+
+      // If we are the host, trigger the gameplay start on the game socket
+      if(isHost && socket && gameId) {
+        socket.emit('start-gameplay', { gameId });
+      }
+
       setTimeout(() => {
-        navigate("/gameplay");
+        navigate("/gameplay", { state: { gameId, playerColor, playerName, initialLobbyPlayers: lobbyPlayers } });
       }, 2000);
     };
     const handleMessageReceived = (data) => {

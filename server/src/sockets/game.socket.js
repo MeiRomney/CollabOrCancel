@@ -238,6 +238,9 @@ export const registerGameSockets = (io, socket) => {
             const player = game.players.find(p => p.color === playerColor);
             if(player) player.note = note;
         });
+        
+        // Emit note update back to the player
+        socket.emit("note-saved", { note });
     });
 
     socket.on("disconnect", () => {
