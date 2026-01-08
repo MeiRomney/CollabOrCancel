@@ -308,12 +308,14 @@ export function resolveCollabVoting(game) {
         winners.forEach(collab => {
             collab.votes.forEach(voterColor => {
                 const player = game.players.find(p => p.color === voterColor);
-                auraChanges.push({
-                    playerId: player.id,
-                    playerColor: voterColor,
-                    change: 1,
-                    reason: "Tied collab vote",
-                });
+                if(player) {
+                    auraChanges.push({
+                        playerId: player.id,
+                        playerColor: voterColor,
+                        change: 1,
+                        reason: "Tied collab vote",
+                    });
+                }
             });
         });
         return { winningCollab: null, auraChanges, tie: true };
@@ -334,24 +336,28 @@ export function resolveCollabVoting(game) {
     // Members get +1 Aura
     winningCollab.votes.forEach(voterColor => {
         const player = game.players.find(p => p.color === voterColor);
-        auraChanges.push({
-            playerId: player.id,
-            playerColor: voterColor,
-            change: 1,
-            reason: "Voted for winning collab",
-        });
+        if(player) {
+            auraChanges.push({
+                playerId: player.id,
+                playerColor: voterColor,
+                change: 1,
+                reason: "Voted for winning collab",
+            });
+        }
     });
 
     // Loser proposer gets -2 Aura
     proposals.forEach(proposal => {
         if(proposal.id === winningCollab.id) return;
-        const losingProposer = proposal.proposer;
-        auraChanges.push({
-            playerId: losingProposer.id,
-            playerColor: losingProposer.color,
-            change: -2,
-            reason: "Lose collab proposal",
-        });
+        const losingProposerPlayer = game.players.find(p => p.color === proposal.proposer);
+        if(losingProposerPlayer) {
+            auraChanges.push({
+                playerId: losingProposerPlayer.id,
+                playerColor: losingProposerPlayer.color,
+                change: -2,
+                reason: "Lose collab proposal",
+            });
+        }
     });
 
     // Losers get -1 Aura
@@ -359,12 +365,14 @@ export function resolveCollabVoting(game) {
         if(proposal.id === winningCollab.id) return;
         proposal.votes.forEach(voterColor => {
             const player = game.players.find(p => p.color === voterColor);
-            auraChanges.push({
-                playerId: player.id,
-                playerColor: voterColor,
-                change: -1,
-                reason: "Voted for losing collab"
-            });
+            if(player) {
+                auraChanges.push({
+                    playerId: player.id,
+                    playerColor: voterColor,
+                    change: -1,
+                    reason: "Voted for losing collab"
+                });
+            }
         });
     });
 

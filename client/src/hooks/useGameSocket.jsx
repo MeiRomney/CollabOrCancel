@@ -33,6 +33,28 @@ export const useGameSocket = (socket, gameId, playerColor) => {
             setCurrentEvent(state.currentEvent);
         });
 
+        // Listen for game state updates (including updated player stats)
+        socket.on("game-state-updated", (state) => {
+            console.log("Game state updated:", state);
+            setPhase(state.phase);
+            setRound(state.round);
+            setPhaseTimer(state.phaseTimer);
+
+            // Support two possible shapes: { myPlayer, otherPlayers } or { players: [...] }
+            if(state.players && Array.isArray(state.players)) {
+                const players = state.players;
+                const my = players.find(p => p.id === playerColor || p.color === playerColor);
+                setMyPlayer(my || null);
+                setOtherPlayers(players.filter(p => !(p.id === playerColor || p.color === playerColor)));
+            } else {
+                setMyPlayer(state.myPlayer);
+                setOtherPlayers(state.otherPlayers || []);
+            }
+
+            setCollabProposals(state.collabProposals || []);
+            setCurrentEvent(state.currentEvent);
+        });
+
         socket.on('phase-changed', (data) => {
             console.log("Phase changed:", data);
             setPhase(data.phase);
@@ -142,6 +164,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
 
         return () => {
             socket.off("game-state");
+            socket.off("game-state-updated");
             socket.off('phase-changed');
             socket.off("collab-proposed");
             socket.off('collab-vote-updated');

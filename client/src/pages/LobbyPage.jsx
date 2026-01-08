@@ -84,11 +84,13 @@ const LobbyPage = () => {
 
     const handlePlayerJoinedLobby = (data) => {
       toast.success(`${data.player.name} joined the lobby!`);
-      setLobbyPlayers(prev => [...prev, data.player]);
+      // Update with complete player list from server to ensure all players are visible
+      setLobbyPlayers(data.players || [data.player]);
     };
     const handlePlayerLeftLobby = (data) => {
       toast(`${data.playerName} left the lobby`);
-      setLobbyPlayers(prev => prev.filter(p => p.id !== data.playerId));
+      // Update with complete player list from server
+      setLobbyPlayers(data.players || []);
     };
     const handleNewHost = (data) => {
       toast.success(`${data.hostName} is now the host!`);
@@ -412,7 +414,12 @@ const LobbyPage = () => {
       {/* Right panels */}
       <RightPanels 
         playerCharacter={playerColor}
-        otherCharacters={otherPlayers.map(p => p.color)}
+        otherPlayers={otherPlayers}
+        myPlayer={{
+          id: playerColor,
+          color: playerColor,
+          isHost
+        }}
       />
 
       {/* Modals */}

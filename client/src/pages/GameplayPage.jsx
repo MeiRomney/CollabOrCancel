@@ -343,12 +343,17 @@ const GameplayPage = () => {
         aura={myPlayer.aura}
         vibe={myPlayer.vibe}
         role={myPlayer.role}
+        round={round}
+        collabHost={collabProposals.length > 0 ? collabProposals[0].proposer : "Waiting"}
+        vibeCount={[myPlayer, ...otherPlayers].filter(p => p.role === 'viber' && p.alive).length}
+        doomerCount={[myPlayer, ...otherPlayers].filter(p => p.role === 'doomer' && p.alive).length}
       />
 
       {/* Right panels */}
       <RightPanels 
         playerCharacter={playerColor}
-        otherCharacters={otherPlayers.map(p => p.color)}
+        otherPlayers={otherPlayers}
+        myPlayer={myPlayer}
       />
 
       {/* Modals */}

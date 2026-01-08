@@ -2,6 +2,31 @@ import { createGame, getGame, updateGame } from "../game/gameManager.js";
 import { clearPhaseTimer, startPhaseTimer } from "../game/phaseManager.js";
 import { resolveRound, resolveCollabVoting, checkWinConditions } from "../game/resolver.js";
 
+// Helper function to broadcast updated game state to all players in a room
+// Emits a single shared state containing full players list; clients derive their own `myPlayer` from it.
+const broadcastGameState = (io, gameId, game) => {
+    const players = (game.players || []).map(p => ({
+        id: p.id,
+        color: p.color,
+        alive: p.alive,
+        role: p.role,
+        aura: p.aura,
+        vibe: p.vibe,
+        note: p.note
+    }));
+
+    io.to(gameId).emit("game-state-updated", {
+        phase: game.phase,
+        round: game.round,
+        phaseTimer: game.phaseTimer,
+        collabProposals: game.collabProposals,
+        currentEvent: game.currentEvent,
+        currentCollab: game.currentCollab,
+        collabHost: game.collabHost,
+        players
+    });
+};
+
 export const registerGameSockets = (io, socket) => {
     // Player joins game
     socket.on("join-gameplay", ({ gameId, player }) => {
@@ -39,7 +64,10 @@ export const registerGameSockets = (io, socket) => {
                 .map(p => ({
                     id: p.id,
                     color: p.color,
-                    alive: p.alive
+                    alive: p.alive,
+                    role: p.role,
+                    aura: p.aura,
+                    vibe: p.vibe
                 }))
         });
 
@@ -79,6 +107,9 @@ export const registerGameSockets = (io, socket) => {
             phase: "COLLAB_PROPOSAL",
             timer: game.phaseTimer
         });
+
+        // Broadcast updated game state so clients receive initial player stats (aura/vibe)
+        broadcastGameState(io, gameId, updatedGame);
 
         // Start automatic timer
         startPhaseTimer(io, gameId, "COLLAB_PROPOSAL", 60000);
@@ -158,6 +189,10 @@ export const registerGameSockets = (io, socket) => {
             phase: "DM_PHASE",
             timer: game.phaseTimer,
         });
+
+        // Broadcast updated game state with new player stats
+        const updatedGame = getGame(gameId);
+        broadcastGameState(io, gameId, updatedGame);
     });
 
     // Submit ability
@@ -224,6 +259,8 @@ export const registerGameSockets = (io, socket) => {
                 winners: updatedGame.winners
             });
         } else {
+            // Broadcast updated game state with new player stats
+            broadcastGameState(io, gameId, updatedGame);
             io.to(gameId).emit("phase-changed", {
                 phase: updatedGame.phase,
                 round: updatedGame.round,

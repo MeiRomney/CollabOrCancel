@@ -111,9 +111,10 @@ export const registerMatchmakingSockets = (io,socket) => {
             lobby
         });
 
-        // Notify all players in the lobby
-        socket.emit('player-joined-lobby', {
+        // Notify all players in the lobby with complete updated player list
+        io.to(gameId).emit('player-joined-lobby', {
             player: newPlayer,
+            players: lobby.players,
             totalPlayers: lobby.players.length
         });
 
@@ -269,12 +270,13 @@ function handlePlayerLeave(io, socket, gameId) {
         }
     }
 
-    // Notify remaining players
+    // Notify remaining players with complete updated player list
     io.to(gameId).emit('player-left-lobby', {
         playerId: socket.id,
         playerName: player.name,
         playerColor: player.color,
-        remainingPlayers: lobby.players.length
+        remainingPlayers: lobby.players.length,
+        players: lobby.players
     });
 
     // Broadcast game list

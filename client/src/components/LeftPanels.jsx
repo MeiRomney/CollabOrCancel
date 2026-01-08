@@ -1,15 +1,15 @@
 import React from "react";
 
-const LeftPanels = ({ playerCharacter, aura, vibe, role }) => {
+const LeftPanels = ({ playerCharacter, aura, vibe, role, round = 1, collabHost = "N/A", vibeCount = 0, doomerCount = 0 }) => {
   return (
     <>
       {/* Round Info */}
       <div className="relative w-80 h-30 top-5 left-5 rounded-3xl bg-transparent border-white border-2 flex flex-col justify-center items-center">
         <p className="text-2xl text-white mx-auto">
-          Current Round: <span className="font-bold">1</span>
+          Current Round: <span className="font-bold">{round}</span>
         </p>
         <p className="text-2xl text-white mx-auto">
-          Collab Host: <span className="font-bold">RED</span>
+          Collab Host: <span className="font-bold capitalize">{collabHost}</span>
         </p>
       </div>
 
@@ -62,10 +62,10 @@ const LeftPanels = ({ playerCharacter, aura, vibe, role }) => {
             />
             <div className="flex flex-col">
               <p className="text-white text-xl">
-                Vibers: <span className="font-bold">6</span> remaining
+                Vibers: <span className="font-bold">{vibeCount}</span> remaining
               </p>
               <p className="text-white text-xl">
-                Doomers: <span className="font-bold">2</span> remaining
+                Doomers: <span className="font-bold">{doomerCount}</span> remaining
               </p>
             </div>
           </div>
