@@ -1,7 +1,7 @@
 import { Check, X } from 'lucide-react';
 import React, { useState } from 'react'
 
-const CollabVote = ({ playerColor, proposals, onVote, onClose}) => {
+const CollabVote = ({ playerColor, proposals = [], skipVotes = [], onVote, onClose}) => {
 
     // const proposers = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
     // const voters = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
@@ -96,7 +96,7 @@ const CollabVote = ({ playerColor, proposals, onVote, onClose}) => {
 
                                         {/* Voters */}
                                         <div className="flex flex-wrap gap-2 pl-14">
-                                            {proposal.votes.map(voter => (
+                                            {(proposal.votes || []).map(voter => (
                                                 <img
                                                     key={voter}
                                                     src={`/images/charactersHead/${voter}.png`}
@@ -136,9 +136,27 @@ const CollabVote = ({ playerColor, proposals, onVote, onClose}) => {
             >
                 <div className="flex items-start justify-between gap-4">
                     {/* Left side */}
-                    <div className="flex flex-col gap-2 flex-1">
+                    {/* <div className="flex flex-col gap-2 flex-1">
                         <p className="text-lg font-semibold opacity-80 pl-14">Skip Vote</p>
                         <p className="text-sm opacity-60 pl-14">Cannot be defended by collab host this round</p>
+                    </div> */}
+                     <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex items-center gap-3">
+                            <p className="text-lg font-semibold opacity-80 pl-14">Skip Vote</p>
+                            <p className="text-sm opacity-60 pl-14">Cannot be defended by collab host this round</p>
+                        </div>
+
+                        {/* Voters */}
+                        <div className="flex flex-wrap gap-2 pl-14">
+                            {skipVotes.map(voter => (
+                                <img
+                                    key={voter}
+                                    src={`/images/charactersHead/${voter}.png`}
+                                    className="w-8 h-8 rounded-full"
+                                    alt={voter}
+                                />
+                            ))}
+                        </div>
                     </div>
 
                     {/* Right side – confirm / cancel */}

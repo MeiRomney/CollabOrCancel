@@ -1,7 +1,7 @@
 import { Check, X } from 'lucide-react';
 import React, { useState } from 'react'
 
-const Vote = ({ playerColor, players, onSubmitVote, onClose}) => {
+const Vote = ({ playerColor, players = [], votes = {}, onSubmitVote, onClose}) => {
 
     // const suspects = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
     // const voters = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
@@ -71,6 +71,11 @@ const Vote = ({ playerColor, players, onSubmitVote, onClose}) => {
                 const votedForThis = myVote === player.color;
                 const isPending = pendingVote === player.color;
 
+                // Build list of voters who have voted for this player
+                const votersForThis = Object.entries(votes || {})
+                    .filter(([voter, target]) => target === player.color)
+                    .map(([voter]) => voter);
+
                 return (
                     <div
                         key={player.color}
@@ -91,17 +96,16 @@ const Vote = ({ playerColor, players, onSubmitVote, onClose}) => {
                                 </div>
 
                                 {/* Voters */}
-                                {/* <div className="flex flex-wrap gap-2 pl-14">
-                                    {voters
-                                    .filter(voter => votes[voter] === suspect)
-                                    .map(voter => (
+                                <div className="flex flex-wrap gap-2 pl-14">
+                                    {votersForThis.map(voter => (
                                         <img
-                                        key={voter}
-                                        src={`/images/charactersHead/${voter}.png`}
-                                        className="w-8 h-8 rounded-full"
+                                            key={voter}
+                                            src={`/images/charactersHead/${voter}.png`}
+                                            className="w-8 h-8 rounded-full"
+                                            alt={voter}
                                         />
                                     ))}
-                                </div> */}
+                                </div>
                             </div>
 
                             {/* Right side – confirm / cancel */}

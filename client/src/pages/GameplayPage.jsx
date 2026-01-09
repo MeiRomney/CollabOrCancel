@@ -40,6 +40,8 @@ const GameplayPage = () => {
     otherPlayers,
     currentEvent,
     collabProposals,
+    skipVotes,
+    votes,
     proposeCollab,
     voteCollab,
     submitAbility,
@@ -410,6 +412,7 @@ const GameplayPage = () => {
         <CollabVote 
           playerColor={playerColor}
           proposals={collabProposals}
+          skipVotes={skipVotes}
           onVote={voteCollab}
           onClose={() => setCollab(false)}
         />
@@ -419,6 +422,7 @@ const GameplayPage = () => {
         <Vote 
           playerColor={playerColor}
           players={otherPlayers.filter(p => p.alive)}
+          votes={votes}
           onSubmitVote={submitVote} 
           onClose={() => setVote(false)}
         />

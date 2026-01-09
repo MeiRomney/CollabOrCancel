@@ -135,17 +135,30 @@ export const registerGameSockets = (io, socket) => {
         const game = getGame(gameId);
         io.to(gameId).emit("collab-proposed", {
             proposals: game.collabProposals,
+            skipVotes: game.skipVotes || []
         });
     });
 
     // Vote for collab
     socket.on("vote-collab", ({ gameId, collabId, voterColor }) => {
         updateGame(gameId, (game) => {
-            
+            if(!game.collabProposals) game.collabProposals = [];
+            if(!game.skipVotes) game.skipVotes = [];
+
             if(collabId === "skip") {
+                // Remove any existing votes on proposals by this voter
                 game.collabProposals.forEach(p => {
                     p.votes = p.votes.filter(v => v !== voterColor);
                 });
+
+                // Toggle skip vote
+                const idx = game.skipVotes.indexOf(voterColor);
+                if(idx === -1) {
+                    game.skipVotes.push(voterColor);
+                } else {
+                    game.skipVotes.splice(idx, 1);
+                }
+
                 return;
             }
 
@@ -157,12 +170,18 @@ export const registerGameSockets = (io, socket) => {
                 p.votes = p.votes.filter(v => v !== voterColor);
             });
 
+            // Also remove skip vote if present
+            game.skipVotes = (game.skipVotes || []).filter(v => v !== voterColor);
+
             proposal.votes.push(voterColor);
         });
 
+        const game = getGame(gameId);
         io.to(gameId).emit("collab-vote-updated", {
             collabId,
             voterColor,
+            skipVotes: game.skipVotes || [],
+            proposals: game.collabProposals
         });
     });
 
@@ -213,7 +232,11 @@ export const registerGameSockets = (io, socket) => {
             game.votes[voterColor] = target;
         });
 
+        const game = getGame(gameId);
+        // Notify submitting player
         socket.emit("vote-submitted", { target });
+        // Broadcast updated votes to all players in room
+        io.to(gameId).emit("vote-updated", { votes: game.votes || {} });
     });
 
     // End action phase and resolve round
@@ -278,6 +301,21 @@ export const registerGameSockets = (io, socket) => {
         
         // Emit note update back to the player
         socket.emit("note-saved", { note });
+    });
+
+    // Update stats (aura/vibe) for a player and broadcast to all players
+    socket.on("stats-changed", ({ gameId, playerColor, aura, vibe }) => {
+        updateGame(gameId, (game) => {
+            const player = game.players.find(p => p.color === playerColor);
+            if(player) {
+                if(aura !== undefined) player.aura = aura;
+                if(vibe !== undefined) player.vibe = vibe;
+            }
+        });
+
+        // Broadcast updated game state to all players
+        const updatedGame = getGame(gameId);
+        broadcastGameState(io, gameId, updatedGame);
     });
 
     socket.on("disconnect", () => {

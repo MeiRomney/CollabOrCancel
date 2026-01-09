@@ -10,6 +10,8 @@ export const useGameSocket = (socket, gameId, playerColor) => {
     const [otherPlayers, setOtherPlayers] = useState([]);
     const [currentEvent, setCurrentEvent] = useState(null);
     const [collabProposals, setCollabProposals] = useState([]);
+    const [skipVotes, setSkipVotes] = useState([]);
+    const [votes, setVotes] = useState({});
     const [roundResults, setRoundResults] = useState(null);
 
     // Initialize socket connection
@@ -30,6 +32,8 @@ export const useGameSocket = (socket, gameId, playerColor) => {
             setMyPlayer(state.myPlayer);
             setOtherPlayers(state.otherPlayers);
             setCollabProposals(state.collabProposals || []);
+            setSkipVotes(state.skipVotes || []);
+            setVotes(state.votes || {});
             setCurrentEvent(state.currentEvent);
         });
 
@@ -52,6 +56,8 @@ export const useGameSocket = (socket, gameId, playerColor) => {
             }
 
             setCollabProposals(state.collabProposals || []);
+            setSkipVotes(state.skipVotes || []);
+            setVotes(state.votes || {});
             setCurrentEvent(state.currentEvent);
         });
 
@@ -74,11 +80,20 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         });
 
         socket.on("collab-proposed", (data) => {
-            setCollabProposals(data.proposals);
+            setCollabProposals(data.proposals || []);
+            setSkipVotes(data.skipVotes || []);
         });
 
         socket.on('collab-vote-updated', (data) => {
             console.log("Collab vote updated:", data);
+            // Update local state for proposals and skip voters
+            if(data.proposals) setCollabProposals(data.proposals);
+            if(data.skipVotes) setSkipVotes(data.skipVotes);
+        });
+
+        socket.on('vote-updated', (data) => {
+            console.log('Vote updated:', data);
+            setVotes(data.votes || {});
         });
 
         socket.on("collab-resolved", (results) =>{
@@ -151,7 +166,8 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         });
 
         socket.on('player-joined', (data) => {
-            toast(`${data.playerColor} joined game`);
+            // toast(`${data.playerColor} joined game`);
+            console.log(`${data.playerColor} joined game`);
         });
 
         socket.on('note-saved', (data) => {
@@ -162,18 +178,31 @@ export const useGameSocket = (socket, gameId, playerColor) => {
             });
         });
 
+        socket.on('stats-changed', (state) => {
+            console.log("Stats changed:", state);
+            // Update players with new aura/vibe values
+            if(state.players && Array.isArray(state.players)) {
+                const players = state.players;
+                const my = players.find(p => p.id === playerColor || p.color === playerColor);
+                setMyPlayer(my || null);
+                setOtherPlayers(players.filter(p => !(p.id === playerColor || p.color === playerColor)));
+            }
+        });
+
         return () => {
             socket.off("game-state");
             socket.off("game-state-updated");
             socket.off('phase-changed');
             socket.off("collab-proposed");
             socket.off('collab-vote-updated');
+            socket.off('vote-updated');
             socket.off("collab-resolved");
             socket.off("event-drawn");
             socket.off("round-resolved");
             socket.off("game-over");
             socket.off('player-joined');
             socket.off('note-saved');
+            socket.off('stats-changed');
         };
     }, [socket, gameId, playerColor]);
 
@@ -219,6 +248,8 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         otherPlayers,
         currentEvent,
         collabProposals,
+        skipVotes,
+        votes,
         roundResults,
         proposeCollab,
         voteCollab,
