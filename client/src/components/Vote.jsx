@@ -20,6 +20,7 @@ const Vote = ({ playerColor, players = [], votes = {}, onSubmitVote, onClose}) =
     // const [votes, setVotes] = useState(mockVotes);
     const [pendingVote, setPendingVote] = useState(null);
     const [myVote, setMyVote] = useState(null);
+    const SKIP = "skip";
 
     const handleVoteClick = (targetColor) => {
         setPendingVote(targetColor);
@@ -67,6 +68,7 @@ const Vote = ({ playerColor, players = [], votes = {}, onSubmitVote, onClose}) =
                 scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
             }}
         >
+            {/* Vote options for each player */}
             {players.map((player) => {
                 const votedForThis = myVote === player.color;
                 const isPending = pendingVote === player.color;
@@ -126,6 +128,55 @@ const Vote = ({ playerColor, players = [], votes = {}, onSubmitVote, onClose}) =
                     </div>
                 );
             })}
+
+            {/* Skip vote option */}
+            <div
+                onClick={() => handleVoteClick(SKIP)}
+                className={`relative cursor-pointer bg-white/20 p-3 rounded-xl text-white transition-all
+                    ${myVote === SKIP ? "ring-2 ring-green-400 scale-[1.02]" : "hover:bg-white/30"}
+                `}
+            >
+                <div className="flex items-start justify-between gap-4">
+                    {/* Left side */}
+                    <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-lg font-bold">
+                                ⊘
+                            </div>
+                            <p className="text-lg font-semibold opacity-80">Skip Vote</p>
+                        </div>
+
+                        {/* Voters who skipped */}
+                        <div className="flex flex-wrap gap-2 pl-14">
+                            {Object.entries(votes || {})
+                                .filter(([voter, target]) => target === SKIP)
+                                .map(([voter]) => (
+                                    <img
+                                        key={voter}
+                                        src={`/images/charactersHead/${voter}.png`}
+                                        className="w-8 h-8 rounded-full"
+                                        alt={voter}
+                                    />
+                                ))}
+                        </div>
+                    </div>
+
+                    {/* Right side – confirm / cancel */}
+                    {pendingVote === SKIP && (
+                        <div
+                            className="flex gap-2 p-5 my-auto"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button className="text-green-400 hover:scale-110 hover:bg-white/10 rounded-xl transition" onClick={confirmVote}>
+                                <Check className="w-10 h-10" />
+                            </button>
+                            <button className="text-red-400 hover:scale-110 hover:bg-black/30 rounded-xl transition" onClick={cancelVote}>
+                                <X className="w-10 h-10" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     </div>
 )};

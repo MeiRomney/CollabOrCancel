@@ -421,7 +421,7 @@ const GameplayPage = () => {
       {vote && (
         <Vote 
           playerColor={playerColor}
-          players={otherPlayers.filter(p => p.alive)}
+          players={[myPlayer, ...otherPlayers].filter(p => p.alive)}
           votes={votes}
           onSubmitVote={submitVote} 
           onClose={() => setVote(false)}
