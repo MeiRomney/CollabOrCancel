@@ -189,9 +189,27 @@ const GameplayPage = () => {
       submitAbility(selectingAbility, targetColor);
       setSelectingAbility(null);
     } else if(selectingDmTarget) {
-      requestDm(targetColor);
-      setSelectingDmTarget(false);
-      toast.success(`DM request sent to ${targetColor}!`);
+      // Check if there's already an active DM with this player
+      if(activeDm && (activeDm.from === targetColor || activeDm.to === targetColor)) {
+        // If DM already exists, just open it
+        setDm(true);
+        setSelectingDmTarget(false);
+        toast.success(`Opened DM with ${targetColor}!`);
+      } else {
+        // Check if there's a pending DM request from this player that we should accept
+        const pendingRequest = dmRequests.find(r => r.from === targetColor && r.to === playerColor);
+        if(pendingRequest) {
+          // Accept the pending request
+          acceptDm(pendingRequest);
+          setSelectingDmTarget(false);
+          toast.success(`Accepted DM from ${targetColor}!`);
+        } else {
+          // If no active DM and no pending request, send a new request
+          requestDm(targetColor);
+          setSelectingDmTarget(false);
+          toast.success(`DM request sent to ${targetColor}!`);
+        }
+      }
     }
   };
 

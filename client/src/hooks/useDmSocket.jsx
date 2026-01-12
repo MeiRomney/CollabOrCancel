@@ -12,13 +12,6 @@ export const useDmSocket = (socket, gameId, playerColor) => {
         socket.on('dm-requested', (data) => {
             if(data.to === playerColor) {
                 setDmRequests(prev => [...prev, data]);
-                toast(
-                    `${data.from} wants to DM you`,
-                    {
-                        duration: 10000,
-                        icon: '💬'
-                    }
-                );
             }
         });
 
