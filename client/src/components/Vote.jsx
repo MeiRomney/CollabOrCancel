@@ -3,24 +3,12 @@ import React, { useState } from 'react'
 
 const Vote = ({ playerColor, players = [], votes = {}, onSubmitVote, onClose}) => {
 
-    // const suspects = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
-    // const voters = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
-    // const SKIP = "skip";
-    // const mockVotes = {
-    //     red: "blue",
-    //     blue: "red",
-    //     green: "red",
-    //     pink: "yellow",
-    //     orange: "red",
-    //     yellow: "blue",
-    //     black: "red",
-    //     white: "green",
-    // };
-
-    // const [votes, setVotes] = useState(mockVotes);
     const [pendingVote, setPendingVote] = useState(null);
     const [myVote, setMyVote] = useState(null);
     const SKIP = "skip";
+
+    // Filter out eliminated players - they cannot be voted for
+    const alivePlayers = players.filter(p => p.alive);
 
     const handleVoteClick = (targetColor) => {
         setPendingVote(targetColor);
@@ -68,8 +56,8 @@ const Vote = ({ playerColor, players = [], votes = {}, onSubmitVote, onClose}) =
                 scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
             }}
         >
-            {/* Vote options for each player */}
-            {players.map((player) => {
+            {/* Vote options for each ALIVE player */}
+            {alivePlayers.map((player) => {
                 const votedForThis = myVote === player.color;
                 const isPending = pendingVote === player.color;
 

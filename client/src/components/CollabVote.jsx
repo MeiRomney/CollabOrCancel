@@ -142,8 +142,11 @@ const CollabVote = ({ playerColor, proposals = [], skipVotes = [], onVote, onClo
                     </div> */}
                      <div className="flex flex-col gap-2 flex-1">
                         <div className="flex items-center gap-3">
-                            <p className="text-lg font-semibold opacity-80 pl-14">Skip Vote</p>
-                            <p className="text-sm opacity-60 pl-14">Cannot be defended by collab host this round</p>
+                            <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-lg font-bold">
+                                ⊘
+                            </div>
+                            <p className="text-lg font-semibold opacity-80 pl-5">Skip Vote</p>
+                            <p className="text-sm opacity-60 pl-5">Cannot be defended by collab host this round</p>
                         </div>
 
                         {/* Voters */}

@@ -10,9 +10,11 @@ export const useGameSocket = (socket, gameId, playerColor) => {
     const [otherPlayers, setOtherPlayers] = useState([]);
     const [currentEvent, setCurrentEvent] = useState(null);
     const [collabProposals, setCollabProposals] = useState([]);
+    const [collabHost, setCollabHost] = useState("waiting");
     const [skipVotes, setSkipVotes] = useState([]);
     const [votes, setVotes] = useState({});
     const [roundResults, setRoundResults] = useState(null);
+    const [gameOverData, setGameOverData] = useState(null);
 
     // Initialize socket connection
     useEffect(() => {
@@ -100,9 +102,11 @@ export const useGameSocket = (socket, gameId, playerColor) => {
             console.log("Collab resolved:", results)
 
             if(results.tie) {
-                toast("Collab vote tied! All participants gain +1 Aura");
+                toast.success("Collab vote tied! All participants gain +1 Aura");
+                setCollabHost("waiting");
             } else if(results.winningCollab) {
                 toast.success(`${results.winningCollab.proposer}'s collab won!`);
+                setCollabHost(results.winningCollab.proposer);
             }
         });
 
@@ -157,6 +161,9 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         });
 
         socket.on("game-over", (data) => {
+            console.log("Game over:", data);
+            setGameOverData(data);
+            
             const isWinner = data.winners.some(w => w.color === playerColor);
             if(isWinner) {
                 toast.success('🎉 YOU WIN! You are the Overlord!', { duration: 10000 });
@@ -248,9 +255,11 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         otherPlayers,
         currentEvent,
         collabProposals,
+        collabHost,
         skipVotes,
         votes,
         roundResults,
+        gameOverData,
         proposeCollab,
         voteCollab,
         submitAbility,

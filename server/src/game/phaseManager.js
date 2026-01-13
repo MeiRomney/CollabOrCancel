@@ -147,6 +147,28 @@ function resolveRoundPhase(io, gameId) {
 
     io.to(gameId).emit("round-resolved", results);
 
+    // Broadcast updated player stats to all players
+    const players = (updatedGame.players || []).map(p => ({
+        id: p.id,
+        color: p.color,
+        alive: p.alive,
+        role: p.role,
+        aura: p.aura,
+        vibe: p.vibe,
+        note: p.note
+    }));
+
+    io.to(gameId).emit("game-state-updated", {
+        phase: updatedGame.phase,
+        round: updatedGame.round,
+        phaseTimer: updatedGame.phaseTimer,
+        collabProposals: updatedGame.collabProposals,
+        currentEvent: updatedGame.currentEvent,
+        currentCollab: updatedGame.currentCollab,
+        collabHost: updatedGame.collabHost,
+        players
+    });
+
     if(updatedGame.phase === "GAME_OVER") {
         clearPhaseTimer(gameId);
         io.to(gameId).emit("game-over", { winners: updatedGame.winners });

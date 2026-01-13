@@ -88,7 +88,7 @@ const LobbyPage = () => {
       setLobbyPlayers(data.players || [data.player]);
     };
     const handlePlayerLeftLobby = (data) => {
-      toast(`${data.playerName} left the lobby`);
+      toast.error(`${data.playerName} left the lobby`);
       // Update with complete player list from server
       setLobbyPlayers(data.players || []);
     };
@@ -103,10 +103,6 @@ const LobbyPage = () => {
             : p
         )
       );
-
-      if(data.playerName !== playerName) {
-        toast(`${data.playerName} changed color to ${data.newColor}`);
-      }
     };
     const handleStartGameplay = () => {
       toast.success("Game is starting!");
@@ -159,7 +155,7 @@ const LobbyPage = () => {
       socket.off('player-typing', handlePlayerTyping);
       socket.off('error', handleError);
     };
-  }, [socket, gameId, navigate, playerName]);
+  }, [socket, gameId, navigate, playerName, playerColor]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {

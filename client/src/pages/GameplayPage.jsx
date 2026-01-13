@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import BackgroundImage from "/images/gameplayBackground.png";
@@ -24,6 +24,7 @@ import { useSocket } from "../contexts/SocketContext";
 const GameplayPage = () => {
   // Game setup - read from navigation state (fallback to defaults)
   const location = useLocation();
+  const navigate = useNavigate();
   const { gameId: navGameId, playerColor: navPlayerColor, initialLobbyPlayers = [], playerName } = location.state || {};
   const gameId = navGameId || "game-123";
   const playerColor = navPlayerColor || "red";
@@ -40,8 +41,10 @@ const GameplayPage = () => {
     otherPlayers,
     currentEvent,
     collabProposals,
+    collabHost,
     skipVotes,
     votes,
+    gameOverData,
     proposeCollab,
     voteCollab,
     submitAbility,
@@ -79,14 +82,27 @@ const GameplayPage = () => {
   const [collabTimer, setCollabTimer] = useState(null);
   const [collabCountdown, setCollabCountdown] = useState(10);
 
-  // const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white", "purple", "brown", "cyan", "lime", "maroon", "rose", "banana", "gray", "tan", "coral"];
-  // const characterColors = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
   const viberAbilities = ["chat", "dm", "proposeCollab", "collab", "vote", "defend", "heal", "sabotage", "note"];
   const doomerAbilities = ["chat", "dm", "proposeCollab", "collab", "vote", "defend", "heal", "invisibleSabotage", "attack", "note"];
 
-  // const playerCharacter = characterColors[0];
-  // const otherCharacters = characterColors.slice(1);
   const abilities = myPlayer?.role === "doomer" ? doomerAbilities : viberAbilities;
+
+  // Redirect to results page when game is over
+  useEffect(() => {
+    if(gameOverData) {
+      // Wait 3 seconds to show the victory/defeat toast, then redirect
+      setTimeout(() => {
+        navigate('/results', {
+          state: {
+            winners: gameOverData.winners,
+            allPlayers: [myPlayer, ...otherPlayers],
+            totalRounds: round,
+            gameId: gameId
+          }
+        });
+      }, 3000);
+    }
+  }, [gameOverData, navigate, round, myPlayer, otherPlayers, gameId]);
 
   // Determine which abilities should be visible in the current phase
   const visibleAbilities = (() => {
@@ -154,6 +170,12 @@ const GameplayPage = () => {
   };
 
   const handleAbilityClick = (abilityName) => {
+    // Eliminated players can only chat and take notes
+    if(!myPlayer.alive && !["chat", "note"].includes(abilityName)) {
+      toast.error("You are eliminated and can only chat or take notes!");
+      return;
+    }
+
     if(abilityName === "chat") {
       setChat(prev => !prev);
     } else if(abilityName === "dm") {
@@ -185,6 +207,12 @@ const GameplayPage = () => {
   };
 
   const handleCharacterClick = (targetColor) => {
+    // Eliminated players cannot perform targeting actions
+    if(!myPlayer.alive) {
+      toast.error("You are eliminated and cannot perform actions!");
+      return;
+    }
+
     if(selectingAbility) {
       submitAbility(selectingAbility, targetColor);
       setSelectingAbility(null);
@@ -364,17 +392,19 @@ const GameplayPage = () => {
         vibe={myPlayer.vibe}
         role={myPlayer.role}
         round={round}
-        collabHost={collabProposals.length > 0 ? collabProposals[0].proposer : "Waiting"}
+        collabHost={collabHost}
         vibeCount={[myPlayer, ...otherPlayers].filter(p => p.role === 'viber' && p.alive).length}
         doomerCount={[myPlayer, ...otherPlayers].filter(p => p.role === 'doomer' && p.alive).length}
       />
 
-      {/* Right panels */}
-      <RightPanels 
-        playerCharacter={playerColor}
-        otherPlayers={otherPlayers}
-        myPlayer={myPlayer}
-      />
+      {/* Right panels - Only visible to collabHost */}
+      {playerColor === collabHost && (
+        <RightPanels 
+          playerCharacter={playerColor}
+          otherPlayers={otherPlayers}
+          myPlayer={myPlayer}
+        />
+      )}
 
       {/* Modals */}
       {chat && (
@@ -468,24 +498,26 @@ const GameplayPage = () => {
 
       {/* Abilities buttons */}
       <div className="absolute bottom-0 w-full h-50 bg-transparent z-4 flex justify-center items-center gap-2">
-        {visibleAbilities.map((name, i) => (
-          <button
-            key={i}
-            className="w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 active:scale-95 active:opacity-100"
-            onClick={() => handleAbilityClick(name)}
-            // visibleAbilities already filters by phase; still guard interactions if needed
-            disabled={phase !== "ACTION_PHASE" && !["chat", "dm", "note", "proposeCollab", "collab", "vote"].includes(name)}
-          >
-            <img src={`/images/${name}.png`} alt={name} className="w-10 h-10" />
-            <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>
-              {formatAbilityName(name)}
-            </p>
-          </button>
-        ))}
+        {visibleAbilities.map((name, i) => {
+          const isDisabledForEliminated = !myPlayer.alive && !["chat", "note"].includes(name);
+          
+          return (
+            <button
+              key={i}
+              className={`w-30 h-30 rounded-full bg-black opacity-80 border-white border-2 flex items-center justify-center flex flex-col cursor-pointer transition-all duration-500 hover:scale-110 hover:opacity-100 active:scale-95 active:opacity-100 ${isDisabledForEliminated ? 'opacity-30 cursor-not-allowed' : ''}`}
+              onClick={() => handleAbilityClick(name)}
+              disabled={isDisabledForEliminated || (phase !== "ACTION_PHASE" && !["chat", "dm", "note", "proposeCollab", "collab", "vote"].includes(name))}
+            >
+              <img src={`/images/${name}.png`} alt={name} className="w-10 h-10" />
+              <p className={`text-white ${hasMultipleWords(name) ? 'text-md' : 'text-xl'}`}>
+                {formatAbilityName(name)}
+              </p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 export default GameplayPage;
-

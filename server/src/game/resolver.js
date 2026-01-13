@@ -1,3 +1,5 @@
+// Fixed resolver.js with proper elimination and vote logic
+
 export const resolveRound = (game) => {
     const changes = [];
     const events = [];
@@ -26,22 +28,49 @@ export const resolveRound = (game) => {
         }
     }
 
-    // 4. Check for elimination
+    // 4. Check for elimination based on Aura and Vibe
     game.players.forEach(player => {
+        // Skip if already eliminated this round
+        const alreadyEliminated = changes.some(c => c.color === player.color && c.eliminated);
+        if(alreadyEliminated) return;
+
+        // Calculate total aura change
         const totalAuraChange = changes
             .filter(c => c.color === player.color && c.auraChange)
             .reduce((sum, c) => sum + c.auraChange, 0);
 
-        if(player.aura += totalAuraChange <= -5) {
+        // Calculate total vibe change
+        const totalVibeChange = changes
+            .filter(c => c.color === player.color && c.vibeChange)
+            .reduce((sum, c) => sum + c.vibeChange, 0);
+
+        const newAura = player.aura + totalAuraChange;
+        const newVibe = player.vibe + totalVibeChange;
+
+        // Check Aura elimination (≤ -5)
+        if(newAura <= -5) {
             changes.push({
                 color: player.color,
                 eliminated: true,
-                reason: "Aura dropped below -5"
+                reason: "Aura dropped to -5 or below"
             });
             events.push({
                 type: "elimination",
                 player: player.color,
                 reason: "Low Aura"
+            });
+        }
+        // Check Vibe elimination (≤ 0)
+        else if(newVibe <= 0) {
+            changes.push({
+                color: player.color,
+                eliminated: true,
+                reason: "Vibe dropped to 0"
+            });
+            events.push({
+                type: "elimination",
+                player: player.color,
+                reason: "No Vibe remaining"
             });
         }
     });
@@ -52,9 +81,22 @@ export const resolveRound = (game) => {
 function applyEventEffect(game) {
     const event = game.currentEvent;
 
-    if(event.effect) {
+    if(event && event.effect) {
         const result = event.effect(game);
-        return { changes: result.changes || result, reveal: result.reveal };
+        
+        // Handle different return formats from event effects
+        if(result) {
+            const changes = Array.isArray(result.changes) 
+                ? result.changes 
+                : Array.isArray(result) 
+                    ? result 
+                    : [];
+            
+            return { 
+                changes: changes, 
+                reveal: result.reveal 
+            };
+        }
     }
 
     return { changes: [] };
@@ -63,7 +105,7 @@ function applyEventEffect(game) {
 function resolveAbilities(game) {
     const changes = [];
     const events = [];
-    const abilities = game.abilites || {};
+    const abilities = game.abilities || {};
     const collabHost = game.collabHost;
     const currentEvent = game.currentEvent;
 
@@ -81,11 +123,11 @@ function resolveAbilities(game) {
 
         if(!actor || !target) return;
 
-        switch(action.abilities) {
+        switch(action.ability) {
             case "attack":
                 // Check if target is defended
                 const defender = Object.entries(abilities).find(
-                    ([color, a]) => a.abilities === "defend" && a.target === target.color
+                    ([color, a]) => a.ability === "defend" && a.target === target.color
                 );
 
                 const isImmune = firstAttackImmune && !firstAttackUsed;
@@ -139,7 +181,7 @@ function resolveAbilities(game) {
                     changes.push({
                         color: actorColor,
                         auraChange: 1,
-                        reason: healingBoost ? "Heal (event boos)" : "Successful heal"
+                        reason: healingBoost ? "Heal (event boost)" : "Successful heal"
                     });
                     changes.push({
                         color: target.color,
@@ -165,7 +207,6 @@ function resolveAbilities(game) {
                             type: "doomer-buffed",
                             target: target.color
                         });
-                        // Mark for double damage for the next attack (handled in game state)
                     }
                 }
                 break;
@@ -174,10 +215,10 @@ function resolveAbilities(game) {
                 if(action.target === actorColor) {
                     // Self-defense
                     const wasAttacked = Object.values(abilities).some(
-                        a => a.abilities === "attack" && a.target === actorColor
+                        a => a.ability === "attack" && a.target === actorColor
                     );
                     const wasSabotaged = Object.values(abilities).some(
-                        a => a.abilities === "sabotage" && a.target === actorColor
+                        a => a.ability === "sabotage" && a.target === actorColor
                     );
 
                     if(wasAttacked || wasSabotaged) {
@@ -230,29 +271,44 @@ function resolveVotes(game) {
     const votes = game.votes || {};
     const doubleVote = game.currentEvent?.modifier === "double-vote";
 
-    // Count votes 
+    // Count votes (exclude "skip" votes)
     const voteCounts = {};
-    Object.values(votes).forEach(target => {
-        voteCounts[target] = (voteCounts[target] || 0) + 1;
+    Object.entries(votes).forEach(([voter, target]) => {
+        // Don't count skip votes
+        if(target !== "skip") {
+            voteCounts[target] = (voteCounts[target] || 0) + 1;
+        }
     });
 
     // Find player(s) with the most votes
     const maxVotes = Math.max(...Object.values(voteCounts), 0);
+    
+    // Only eliminate if there are actual votes (maxVotes > 0)
+    if(maxVotes === 0) {
+        // No one voted for anyone (all skipped or no votes)
+        events.push({
+            type: "no-elimination",
+            reason: "No valid votes cast"
+        });
+        return { changes, events };
+    }
+
     const eliminated = Object.entries(voteCounts)
-        .filter(([_, count]) => count === maxVotes && count > 0)
+        .filter(([_, count]) => count === maxVotes)
         .map(([color]) => color);
 
     if(eliminated.length === 1) {
         // Someone is voted out
+        const eliminatedPlayer = eliminated[0];
         changes.push({
-            color: eliminated[0],
+            color: eliminatedPlayer,
             eliminated: true,
             reason: "Voted out"
         });
 
         events.push({
             type: "voted-out",
-            player: eliminated[0],
+            player: eliminatedPlayer,
             votes: maxVotes
         });
 
@@ -260,7 +316,10 @@ function resolveVotes(game) {
 
         // All voters get Aura changes
         Object.entries(votes).forEach(([voterColor, target]) => {
-            if(target === eliminated[0]) {
+            // Skip voters don't get aura changes
+            if(target === "skip") return;
+
+            if(target === eliminatedPlayer) {
                 changes.push({
                     color: voterColor,
                     auraChange: auraChange,
@@ -273,6 +332,13 @@ function resolveVotes(game) {
                     reason: "Voted incorrectly"
                 });
             }
+        });
+    } else if(eliminated.length > 1) {
+        // Tie - no one is eliminated
+        events.push({
+            type: "vote-tie",
+            tiedPlayers: eliminated,
+            votes: maxVotes
         });
     }
 
@@ -394,6 +460,28 @@ export function checkWinConditions(game) {
     const winningVibers = alivePlayers.filter(p => p.role === "viber" && p.aura >= 10);
     if(winningVibers.length >= 2) {
         return winningVibers.map(v => ({ id: v.id, color: v.color, role: "viber", type: "overlord" }));
+    }
+
+    // Check if all remaining alive players are doomers (all vibers eliminated)
+    const allDoomersAlive = alivePlayers.length > 0 && alivePlayers.every(p => p.role === "doomer");
+    if(allDoomersAlive) {
+        return alivePlayers.map(p => ({
+            id: p.id,
+            color: p.color,
+            role: p.role,
+            type: "all-vibers-eliminated"
+        }));
+    }
+
+    // Check if all remaining alive players are vibers (all doomers eliminated)
+    const allVibersAlive = alivePlayers.length > 0 && alivePlayers.every(p => p.role === "viber");
+    if(allVibersAlive) {
+        return alivePlayers.map(p => ({
+            id: p.id,
+            color: p.color,
+            role: p.role,
+            type: "all-doomers-eliminated"
+        }));
     }
 
     // End game with two players remaining
