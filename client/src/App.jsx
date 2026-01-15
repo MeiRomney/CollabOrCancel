@@ -7,6 +7,8 @@ import LobbyPage from "./pages/LobbyPage";
 import MatchMakingPage from "./pages/MatchMakingPage";
 import { SocketProvider } from "./contexts/SocketContext";
 import GameRules from "./pages/GameRules";
+import RolesPage from "./pages/RolesPage";
+import AboutUsPage from "./pages/AboutUsPage";
 
 const App = () => {
   return (
@@ -15,6 +17,8 @@ const App = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/gamerules" element={<GameRules />} />
+          <Route path="/roles" element={<RolesPage />} />
+          <Route path="/aboutus" element={<AboutUsPage />} />
           <Route path="/matchmaking" element={<MatchMakingPage />} />
           <Route path="/lobby" element={<LobbyPage />} />
           <Route path="/gameplay" element={<GameplayPage />} />

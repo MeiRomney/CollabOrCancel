@@ -68,9 +68,10 @@ const GameRules = () => {
                 key={item}
                 className="cursor-pointer relative after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-[3px] after:w-0 after:bg-white after:transition-all after:duration-500 hover:after:w-full hover:scale-110"
                 onClick={() => {
-                  if (item === "Game Rules") navigate("/gamerules");
                   if (item === "Home") navigate("/");
-                  // add other routes as needed
+                  else if (item === "Game Rules") navigate("/gamerules");
+                  else if (item === "Roles") navigate("/roles");
+                  else if (item === "About us") navigate("/aboutus");
                 }}
               >
                 {item}
@@ -107,7 +108,7 @@ const GameRules = () => {
       </AnimatePresence>
 
       {/* Body - scrollable */}
-      <div className="max-w-7xl mx-auto h-[calc(100vh-10rem)] overflow-y-auto px-10 py-5 scrollbar-hide">
+      <div className="w-full mx-auto h-[calc(100vh-10rem)] overflow-y-auto px-10 py-5 pl-50 scrollbar-hide">
         <h1 className="text-6xl font-bold text-white mb-10">
           Collab or Cancel – Game Instructions
         </h1>
