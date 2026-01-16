@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import Header from "../components/Header";
 
 const GameRules = () => {
-  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState(false);
 
   const toggleMenu = () => setActiveMenu(!activeMenu);
@@ -20,92 +18,7 @@ const GameRules = () => {
       }}
     >
       {/* Header */}
-      <div className="w-full h-40 flex items-center justify-between p-5 border-b-2 border-white bg-transparent">
-        {/* Logo + Menu */}
-        <div className="flex gap-10">
-          <button
-            onClick={toggleMenu}
-            className={`w-40 h-20 border-white border-2 rounded-full flex justify-center items-center gap-3 transition-all duration-500 ease-in-out ${
-              activeMenu
-                ? "bg-white scale-95"
-                : "bg-transparent hover:bg-white hover:scale-95"
-            } group`}
-          >
-            <p
-              className={`font-bold text-2xl transition-all duration-500 ${
-                activeMenu
-                  ? "text-black translate-x-2"
-                  : "text-white group-hover:text-black group-hover:translate-x-2"
-              }`}
-            >
-              Menu
-            </p>
-            <img
-              src="/images/menu.png"
-              alt="menuIcon"
-              className={`w-5 h-5 transition-all duration-500 ease-in-out ${
-                activeMenu
-                  ? "opacity-0 scale-0"
-                  : "group-hover:opacity-0 group-hover:scale-0"
-              }`}
-            />
-          </button>
-          <button className="w-80 h-20 border-white border-2 rounded-full bg-transparent flex justify-center items-center gap-3">
-            <img
-              src="/images/CollabOrCancelLogo.png"
-              alt="logo"
-              className="w-15 h-15"
-            />
-            <p className="font-bold text-2xl text-white">Collab or Cancel</p>
-          </button>
-        </div>
-
-        {/* Menu Items */}
-        <div className="flex gap-20 text-white text-2xl font-bold pr-10">
-          {["Home", "Game Rules", "Roles", "About us", "Setting"].map(
-            (item) => (
-              <button
-                key={item}
-                className="cursor-pointer relative after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-[3px] after:w-0 after:bg-white after:transition-all after:duration-500 hover:after:w-full hover:scale-110"
-                onClick={() => {
-                  if (item === "Home") navigate("/");
-                  else if (item === "Game Rules") navigate("/gamerules");
-                  else if (item === "Roles") navigate("/roles");
-                  else if (item === "About us") navigate("/aboutus");
-                }}
-              >
-                {item}
-              </button>
-            )
-          )}
-          <button className="w-40 h-20 rounded-full bg-red-400 flex items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all">
-            Sign Up
-          </button>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {activeMenu && (
-          <motion.div
-            initial={{ clipPath: "inset(0 0 100% 0)" }}
-            animate={{ clipPath: "inset(0 0 0% 0)" }}
-            exit={{ clipPath: "inset(0 0 100% 0)" }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="absolute w-60 p-10 border-black border-2 rounded-xl bg-black opacity-90 z-50"
-          >
-            <div className="flex flex-col gap-10 text-white text-2xl font-bold">
-              {["Profile", "Character"].map((item) => (
-                <button
-                  key={item}
-                  className="cursor-pointer relative after:content-[''] after:absolute after:left-0 after:bottom-0 after:h-[3px] after:w-0 after:bg-white after:transition-all after:duration-500 hover:after:w-full hover:scale-110"
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Header activeMenu={activeMenu} toggleMenu={toggleMenu} />
 
       {/* Body - scrollable */}
       <div className="w-full mx-auto h-[calc(100vh-10rem)] overflow-y-auto px-10 py-5 pl-50 scrollbar-hide">
