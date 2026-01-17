@@ -12,16 +12,15 @@ const LobbyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const socket = useSocket();
-  
-  // Get lobby info from navigation state
-  const { 
-    gameId, 
-    playerColor: initialColor, 
-    playerName, 
-    isHost,
-    initialLobbyPlayers = []
-  } = location.state || {};
 
+  // Get lobby info from navigation state
+  const {
+    gameId,
+    playerColor: initialColor,
+    playerName,
+    isHost,
+    initialLobbyPlayers = [],
+  } = location.state || {};
 
   // const [socket, setSocket] = useState(null);
   const [playerColor, setPlayerColor] = useState(initialColor || "red");
@@ -48,7 +47,7 @@ const LobbyPage = () => {
     { name: "banana", hex: "#fef08a" },
     { name: "gray", hex: "#6b7280" },
     { name: "tan", hex: "#d2b48c" },
-    { name: "coral", hex: "#ff7f50" }
+    { name: "coral", hex: "#ff7f50" },
   ];
 
   const backgroundStyle = {
@@ -72,13 +71,13 @@ const LobbyPage = () => {
   ];
 
   useEffect(() => {
-    if(!gameId) {
+    if (!gameId) {
       toast.error("No game ID found! Redirecting...");
       navigate("/matchmaking");
       return;
     }
 
-    if(!socket) return;
+    if (!socket) return;
 
     let isComponentMounted = true;
 
@@ -96,34 +95,39 @@ const LobbyPage = () => {
       toast.success(`${data.hostName} is now the host!`);
     };
     const handlePlayerColorChanged = (data) => {
-      setLobbyPlayers(prev => 
-        prev.map(p => 
-          p.id === data.playerId
-            ? { ...p, color: data.newColor }
-            : p
-        )
+      setLobbyPlayers((prev) =>
+        prev.map((p) =>
+          p.id === data.playerId ? { ...p, color: data.newColor } : p,
+        ),
       );
     };
     const handleStartGameplay = () => {
       toast.success("Game is starting!");
 
       // If we are the host, trigger the gameplay start on the game socket
-      if(isHost && socket && gameId) {
-        socket.emit('start-gameplay', { gameId });
+      if (isHost && socket && gameId) {
+        socket.emit("start-gameplay", { gameId });
       }
 
       setTimeout(() => {
-        navigate("/gameplay", { state: { gameId, playerColor, playerName, initialLobbyPlayers: lobbyPlayers } });
+        navigate("/gameplay", {
+          state: {
+            gameId,
+            playerColor,
+            playerName,
+            initialLobbyPlayers: lobbyPlayers,
+          },
+        });
       }, 2000);
     };
     const handleMessageReceived = (data) => {
-      setChatMessages(prev => [...prev, data]);
+      setChatMessages((prev) => [...prev, data]);
     };
     const handlePlayerTyping = (data) => {
-      if(data.isTyping) {
-        setTypingPlayers(prev => new Set([...prev, data.playerColor]));
+      if (data.isTyping) {
+        setTypingPlayers((prev) => new Set([...prev, data.playerColor]));
       } else {
-        setTypingPlayers(prev => {
+        setTypingPlayers((prev) => {
           const next = new Set(prev);
           next.delete(data.playerColor);
           return next;
@@ -134,44 +138,44 @@ const LobbyPage = () => {
       toast.error(error.message);
     };
 
-    socket.on('player-joined-lobby', handlePlayerJoinedLobby);
-    socket.on('player-left-lobby', handlePlayerLeftLobby);
-    socket.on('new-host', handleNewHost);
-    socket.on('player-color-changed', handlePlayerColorChanged);
-    socket.on('game-starting', handleStartGameplay);
-    socket.on('message-received', handleMessageReceived);
-    socket.on('player-typing', handlePlayerTyping);
-    socket.on('error', handleError);
+    socket.on("player-joined-lobby", handlePlayerJoinedLobby);
+    socket.on("player-left-lobby", handlePlayerLeftLobby);
+    socket.on("new-host", handleNewHost);
+    socket.on("player-color-changed", handlePlayerColorChanged);
+    socket.on("game-starting", handleStartGameplay);
+    socket.on("message-received", handleMessageReceived);
+    socket.on("player-typing", handlePlayerTyping);
+    socket.on("error", handleError);
 
     return () => {
       isComponentMounted = false;
 
-      socket.off('player-joined-lobby', handlePlayerJoinedLobby);
-      socket.off('player-left-lobby', handlePlayerLeftLobby);
-      socket.off('new-host', handleNewHost);
-      socket.off('player-color-changed', handlePlayerColorChanged);
-      socket.off('game-starting', handleStartGameplay);
-      socket.off('message-received', handleMessageReceived);
-      socket.off('player-typing', handlePlayerTyping);
-      socket.off('error', handleError);
+      socket.off("player-joined-lobby", handlePlayerJoinedLobby);
+      socket.off("player-left-lobby", handlePlayerLeftLobby);
+      socket.off("new-host", handleNewHost);
+      socket.off("player-color-changed", handlePlayerColorChanged);
+      socket.off("game-starting", handleStartGameplay);
+      socket.off("message-received", handleMessageReceived);
+      socket.off("player-typing", handlePlayerTyping);
+      socket.off("error", handleError);
     };
   }, [socket, gameId, navigate, playerName, playerColor]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if(socket && gameId) {
-        socket.emit('leave-lobby', { gameId });
+      if (socket && gameId) {
+        socket.emit("leave-lobby", { gameId });
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [socket, gameId]);
 
   // Get list of taken colors from other players
-  const takenColors = lobbyPlayers.map(p => p.color);
+  const takenColors = lobbyPlayers.map((p) => p.color);
 
   // Handle color selection
   const handleColorSelect = (colorName) => {
@@ -186,46 +190,46 @@ const LobbyPage = () => {
 
     setPlayerColor(colorName);
     toast.success(`Color changed to ${colorName}!`);
-    
+
     // Emit color change to server
     if (socket && gameId) {
-      socket.emit('change-color', { gameId, newColor: colorName });
+      socket.emit("change-color", { gameId, newColor: colorName });
     }
   };
 
   const handleStartGame = () => {
-    if(!isHost) {
+    if (!isHost) {
       toast.error("Only the host can start the game!");
       return;
     }
 
-    if(socket && gameId) {
-      socket.emit('start-game', { gameId });
+    if (socket && gameId) {
+      socket.emit("start-game", { gameId });
     }
   };
 
   const sendMessage = (message) => {
-    if(socket && gameId && playerColor) {
-      socket.emit('send-message', {
-        gameId, 
+    if (socket && gameId && playerColor) {
+      socket.emit("send-message", {
+        gameId,
         message,
-        senderColor: playerColor
+        senderColor: playerColor,
       });
     }
   };
 
   const setTyping = (isTyping) => {
-    if(socket && gameId && playerColor) {
-      socket.emit('typing', {
-        gameId, 
+    if (socket && gameId && playerColor) {
+      socket.emit("typing", {
+        gameId,
         playerColor,
-        isTyping
+        isTyping,
       });
     }
   };
 
   // Get other players (excluding self)
-  const otherPlayers = lobbyPlayers.filter(p => p.color !== playerColor);
+  const otherPlayers = lobbyPlayers.filter((p) => p.color !== playerColor);
 
   return (
     <div style={backgroundStyle}>
@@ -264,14 +268,14 @@ const LobbyPage = () => {
           },
         }}
       />
-      
+
       {/* Table */}
       <img
         src="/images/table.png"
         alt="table"
         style={{
           position: "absolute",
-          width: "850px",
+          width: "680px",
           left: "50%",
           top: "70%",
           transform: "translate(-50%, -50%)",
@@ -285,7 +289,7 @@ const LobbyPage = () => {
         alt="player"
         style={{
           position: "absolute",
-          width: "200px",
+          width: "160px",
           left: "50%",
           top: "52%",
           transform: "translateX(-50%)",
@@ -301,7 +305,7 @@ const LobbyPage = () => {
         if (i === 3) {
           imageSrc = `/images/charactersFront/${player.color}.png`;
         }
-        
+
         return (
           <img
             key={player.id}
@@ -309,7 +313,7 @@ const LobbyPage = () => {
             alt={`player-${player.color}`}
             style={{
               position: "absolute",
-              width: `${i === 0 || i === 6 ? "160px" : i === 1 || i === 5 ? "150px" : "140px"}`,
+              width: `${i === 0 || i === 6 ? "128px" : i === 1 || i === 5 ? "120px" : "112px"}`,
               ...pos,
               transform: `translate(-50%, -50%) ${i < 3 ? "scaleX(-1)" : ""}`,
               zIndex: 1,
@@ -318,23 +322,19 @@ const LobbyPage = () => {
         );
       })}
 
-        {isHost
-        ? (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
-                Click <span className="font-bold">Start</span> when you're ready
-            </div>
-        )
-        : (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
-                Waiting for Lobby Host to <span className="font-bold">Start</span>
-            </div>
-        )}
+      {isHost ? (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
+          Click <span className="font-bold">Start</span> when you're ready
+        </div>
+      ) : (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-xl text-2xl z-50">
+          Waiting for Lobby Host to <span className="font-bold">Start</span>
+        </div>
+      )}
 
       {/* Lobby Info */}
       <div className="absolute w-80 top-5 left-5 rounded-3xl bg-black/30 backdrop-blur-md border-white border-2 flex flex-col justify-center items-center p-4">
-        <p className="text-2xl text-white">
-          Waiting for players...
-        </p>
+        <p className="text-2xl text-white">Waiting for players...</p>
         <p className="text-2xl text-white mt-2">
           <span className="font-bold">{lobbyPlayers.length}/8</span> Players
         </p>
@@ -353,7 +353,7 @@ const LobbyPage = () => {
         <h3 className="text-white text-xl font-bold text-center mb-2">
           Select Your Color
         </h3>
-        
+
         <div className="grid grid-cols-6 gap-3">
           {allColors.map((color, i) => {
             const isTaken = takenColors.includes(color.name);
@@ -367,21 +367,32 @@ const LobbyPage = () => {
                 className={`
                   w-12 h-12 rounded-full relative
                   transition-all duration-300
-                  ${isTaken ? 'opacity-40 cursor-not-allowed' : 'hover:scale-110 cursor-pointer'}
-                  ${isSelected ? 'ring-4 ring-white scale-110' : ''}
+                  ${isTaken ? "opacity-40 cursor-not-allowed" : "hover:scale-110 cursor-pointer"}
+                  ${isSelected ? "ring-4 ring-white scale-110" : ""}
                 `}
                 style={{
                   backgroundColor: color.hex,
-                  border: color.name === 'white' ? '2px solid #gray' : '2px solid white',
+                  border:
+                    color.name === "white"
+                      ? "2px solid #gray"
+                      : "2px solid white",
                 }}
                 title={color.name}
               >
                 {/* Selected checkmark */}
                 {isSelected && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl" style={{ 
-                      color: color.name === 'white' || color.name === 'yellow' || color.name === 'banana' ? 'black' : 'white' 
-                    }}>
+                    <span
+                      className="text-2xl"
+                      style={{
+                        color:
+                          color.name === "white" ||
+                          color.name === "yellow" ||
+                          color.name === "banana"
+                            ? "black"
+                            : "white",
+                      }}
+                    >
                       ✓
                     </span>
                   </div>
@@ -390,9 +401,7 @@ const LobbyPage = () => {
                 {/* Taken X mark */}
                 {isTaken && !isSelected && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl text-red-500 font-bold">
-                      ✕
-                    </span>
+                    <span className="text-2xl text-red-500 font-bold">✕</span>
                   </div>
                 )}
               </button>
@@ -408,13 +417,13 @@ const LobbyPage = () => {
       </div>
 
       {/* Right panels */}
-      <RightPanels 
+      <RightPanels
         playerCharacter={playerColor}
         otherPlayers={otherPlayers}
         myPlayer={{
           id: playerColor,
           color: playerColor,
-          isHost
+          isHost,
         }}
       />
 
@@ -425,7 +434,7 @@ const LobbyPage = () => {
           messages={chatMessages}
           typingPlayers={typingPlayers}
           onSendMessage={sendMessage}
-          onTyping={setTyping}  
+          onTyping={setTyping}
           onClose={() => setChat(false)}
         />
       )}
@@ -434,7 +443,7 @@ const LobbyPage = () => {
       <div className="absolute bottom-4 w-full flex justify-center items-center gap-4 z-10">
         <button
           className="w-28 h-28 rounded-full bg-black/80 border-white border-2 flex items-center justify-center flex-col cursor-pointer transition-all duration-300 hover:scale-110 hover:bg-black/90 active:scale-95"
-          onClick={() => setChat(prev => !prev)}
+          onClick={() => setChat((prev) => !prev)}
         >
           <img src="/images/chat.png" alt="chat" className="w-10 h-10" />
           <p className="text-white text-lg mt-1">CHAT</p>
@@ -454,8 +463,8 @@ const LobbyPage = () => {
         <button
           className="w-28 h-28 rounded-full bg-red-600/80 border-white border-2 flex items-center justify-center flex-col cursor-pointer transition-all duration-300 hover:scale-110 hover:bg-red-600 active:scale-95"
           onClick={() => {
-            if(socket && gameId) {
-              socket.emit('leave-lobby', { gameId });
+            if (socket && gameId) {
+              socket.emit("leave-lobby", { gameId });
             }
             navigate("/matchmaking");
           }}

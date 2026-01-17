@@ -235,11 +235,11 @@ const GameplayPage = () => {
       setCollab((prev) => !prev);
     } else if (
       ["defend", "heal", "sabotage", "invisibleSabotage", "attack"].includes(
-        abilityName
+        abilityName,
       )
     ) {
       setSelectingAbility((prev) =>
-        prev === abilityName ? null : abilityName
+        prev === abilityName ? null : abilityName,
       );
     } else if (abilityName === "vote") {
       setVote((prev) => !prev);
@@ -271,7 +271,7 @@ const GameplayPage = () => {
       } else {
         // Check if there's a pending DM request from this player that we should accept
         const pendingRequest = dmRequests.find(
-          (r) => r.from === targetColor && r.to === playerColor
+          (r) => r.from === targetColor && r.to === playerColor,
         );
         if (pendingRequest) {
           // Accept the pending request
@@ -362,7 +362,7 @@ const GameplayPage = () => {
         alt="table"
         style={{
           position: "absolute",
-          width: "850px",
+          width: "680px",
           left: "50%",
           top: "70%",
           transform: "translate(-50%, -50%)",
@@ -376,7 +376,7 @@ const GameplayPage = () => {
         alt="player"
         style={{
           position: "absolute",
-          width: "200px",
+          width: "160px",
           left: "50%",
           top: "52%",
           transform: "translateX(-50%)",
@@ -412,10 +412,10 @@ const GameplayPage = () => {
               position: "absolute",
               width: `${
                 i === 0 || i === 6
-                  ? "160px"
+                  ? "128px"
                   : i === 1 || i === 5
-                  ? "150px"
-                  : "140px"
+                    ? "120px"
+                    : "112px"
               }`,
               ...pos,
               transform: `translate(-50%, -50%) ${i < 3 ? "scaleX(-1)" : ""}`,
@@ -444,12 +444,12 @@ const GameplayPage = () => {
         collabHost={collabHost}
         vibeCount={
           [myPlayer, ...otherPlayers].filter(
-            (p) => p.role === "viber" && p.alive
+            (p) => p.role === "viber" && p.alive,
           ).length
         }
         doomerCount={
           [myPlayer, ...otherPlayers].filter(
-            (p) => p.role === "doomer" && p.alive
+            (p) => p.role === "doomer" && p.alive,
           ).length
         }
       />
