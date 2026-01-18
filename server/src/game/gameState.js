@@ -114,7 +114,7 @@ const EVENT_DECK = [
     description: "Everyone learns how many Doomers are still alive",
     effect: (game) => {
       const aliveDoomerCount = game.players.filter(
-        (p) => p.alive && p.role === "doomer"
+        (p) => p.alive && p.role === "doomer",
       ).length;
       return { reveal: { type: "doomer-count", count: aliveDoomerCount } };
     },
@@ -199,6 +199,8 @@ export const createInitialGameState = (players) => {
     players: shuffled.map((p, i) => ({
       id: p.id,
       color: p.color,
+      name: p.name,
+      isBot: p.isBot || false,
       role: roles[i],
       alive: true,
       aura: 0,
