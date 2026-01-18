@@ -20,6 +20,7 @@ import { useDmSocket } from "../hooks/useDmSocket";
 import PhaseTimer from "../components/PhaseTimer";
 import EventDisplay from "../components/EventDisplay";
 import { useSocket } from "../contexts/SocketContext";
+import BotDebugPanel from "../debug/BotDebugPanel";
 
 const GameplayPage = () => {
   // Game setup - read from navigation state (fallback to defaults)
@@ -433,6 +434,14 @@ const GameplayPage = () => {
           />
         );
       })}
+
+      <BotDebugPanel
+        otherPlayers={otherPlayers}
+        collabProposals={collabProposals}
+        skipVotes={skipVotes}
+        votes={votes}
+        phase={phase}
+      />
 
       {/* Left panels */}
       <LeftPanels

@@ -50,13 +50,13 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       if (state.players && Array.isArray(state.players)) {
         const players = state.players;
         const my = players.find(
-          (p) => p.id === playerColor || p.color === playerColor
+          (p) => p.id === playerColor || p.color === playerColor,
         );
         setMyPlayer(my || null);
         setOtherPlayers(
           players.filter(
-            (p) => !(p.id === playerColor || p.color === playerColor)
-          )
+            (p) => !(p.id === playerColor || p.color === playerColor),
+          ),
         );
       } else {
         setMyPlayer(state.myPlayer);
@@ -88,8 +88,19 @@ export const useGameSocket = (socket, gameId, playerColor) => {
     });
 
     socket.on("collab-proposed", (data) => {
+      console.log("Collab proposed:", data);
       setCollabProposals(data.proposals || []);
       setSkipVotes(data.skipVotes || []);
+
+      if (data.proposals && data.proposals.length > 0) {
+        const latestProposal = data.proposals[data.proposals.length - 1];
+        if (latestProposal.proposer !== playerColor) {
+          toast.success(`${latestProposal.proposer} proposed a collab!`, {
+            icon: "🤝",
+            duration: 2000,
+          });
+        }
+      }
     });
 
     socket.on("collab-vote-updated", (data) => {
@@ -102,6 +113,9 @@ export const useGameSocket = (socket, gameId, playerColor) => {
     socket.on("vote-updated", (data) => {
       console.log("Vote updated:", data);
       setVotes(data.votes || {});
+
+      const voteCount = Object.keys(data.votes || {}).length;
+      console.log(`${voteCount} votes submitted`);
     });
 
     socket.on("collab-resolved", (results) => {
@@ -157,6 +171,8 @@ export const useGameSocket = (socket, gameId, playerColor) => {
           alive: !myChange.eliminated,
         };
       });
+
+      setVotes({}); // Reset votes for next round
     });
 
     socket.on("game-over", (data) => {
@@ -190,14 +206,22 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       if (state.players && Array.isArray(state.players)) {
         const players = state.players;
         const my = players.find(
-          (p) => p.id === playerColor || p.color === playerColor
+          (p) => p.id === playerColor || p.color === playerColor,
         );
         setMyPlayer(my || null);
         setOtherPlayers(
           players.filter(
-            (p) => !(p.id === playerColor || p.color === playerColor)
-          )
+            (p) => !(p.id === playerColor || p.color === playerColor),
+          ),
         );
+      }
+    });
+
+    socket.on("timer-updated", (data) => {
+      console.log("Timer updated:", data);
+      setPhaseTimer(data.phaseTimer);
+      if (data.reason === "all_players_ready") {
+        toast("All players ready! Phase ending soon...", { icon: "⏱️" });
       }
     });
 
@@ -215,6 +239,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       socket.off("player-joined");
       socket.off("note-saved");
       socket.off("stats-changed");
+      socket.off("timer-updated");
     };
   }, [socket, gameId, playerColor]);
 
@@ -235,7 +260,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         });
       }
     },
-    [socket, gameId, playerColor]
+    [socket, gameId, playerColor],
   );
 
   const submitAbility = useCallback(
@@ -245,7 +270,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         toast.success(`${ability} action submitted`);
       }
     },
-    [socket, gameId, playerColor]
+    [socket, gameId, playerColor],
   );
 
   const submitVote = useCallback(
@@ -255,7 +280,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         toast.success("Vote submitted");
       }
     },
-    [socket, gameId, playerColor]
+    [socket, gameId, playerColor],
   );
 
   const saveNote = useCallback(
@@ -264,7 +289,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
         socket.emit("save-note", { gameId, playerColor, note });
       }
     },
-    [socket, gameId, playerColor]
+    [socket, gameId, playerColor],
   );
 
   return {

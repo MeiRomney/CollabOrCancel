@@ -5,13 +5,22 @@ export const useDmSocket = (socket, gameId, playerColor) => {
   const [dmRequests, setDmRequests] = useState([]);
   const [activeDm, setActiveDm] = useState(null);
   const [dmMessages, setDmMessages] = useState([]);
+  const [dmTyping, setDmTyping] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on("dm-requested", (data) => {
+      console.log("DM requested:", data);
       if (data.to === playerColor) {
-        setDmRequests((prev) => [...prev, data]);
+        setDmRequests((prev) => {
+          // Avoid duplicate requests
+          const exists = prev.some(
+            (r) => r.from === data.from && r.to === data.to,
+          );
+          if (exists) return prev;
+          return [...prev, data];
+        });
       }
     });
 
@@ -25,13 +34,13 @@ export const useDmSocket = (socket, gameId, playerColor) => {
 
     socket.on("dm-accepted", (data) => {
       setDmRequests((prev) =>
-        prev.filter((r) => !(r.from === data.from && r.to === data.to))
+        prev.filter((r) => !(r.from === data.from && r.to === data.to)),
       );
     });
 
     socket.on("dm-rejected", (data) => {
       setDmRequests((prev) =>
-        prev.filter((r) => !(r.from === data.from && r.to === data.to))
+        prev.filter((r) => !(r.from === data.from && r.to === data.to)),
       );
       if (data.from === playerColor) {
         toast.error(`${data.to} rejected your DM request`);
@@ -40,11 +49,23 @@ export const useDmSocket = (socket, gameId, playerColor) => {
 
     socket.on("dm-message-received", (data) => {
       setDmMessages((prev) => [...prev, data]);
+
+      // stop typing indicator after receiving a message
+      setDmTyping(false);
+    });
+
+    socket.on("dm-typing", (data) => {
+      console.log(data.isTyping);
+      if (data.playerColor !== playerColor) {
+        setDmTyping(data.isTyping);
+      }
     });
 
     socket.on("dm-ended", (data) => {
+      console.log("DM ended:", data);
       setActiveDm(null);
       setDmMessages([]);
+      setDmTyping(false);
       toast.success("DM ended");
     });
 
@@ -54,6 +75,7 @@ export const useDmSocket = (socket, gameId, playerColor) => {
       socket.off("dm-accepted");
       socket.off("dm-rejected");
       socket.off("dm-message-received");
+      socket.off("dm-typing");
       socket.off("dm-ended");
     };
   }, [socket, playerColor]);
@@ -68,7 +90,7 @@ export const useDmSocket = (socket, gameId, playerColor) => {
         });
       }
     },
-    [socket, gameId, playerColor]
+    [socket, gameId, playerColor],
   );
 
   const acceptDm = useCallback(
@@ -79,9 +101,12 @@ export const useDmSocket = (socket, gameId, playerColor) => {
           from: request.from,
           to: request.to,
         });
+
+        // Remove from requests
+        setDmRequests((prev) => prev.filter((r) => r !== request));
       }
     },
-    [socket, gameId]
+    [socket, gameId],
   );
 
   const rejectDm = useCallback(
@@ -95,7 +120,7 @@ export const useDmSocket = (socket, gameId, playerColor) => {
         setDmRequests((prev) => prev.filter((r) => r !== request));
       }
     },
-    [socket, gameId]
+    [socket, gameId],
   );
 
   const sendDmMessage = useCallback(
@@ -108,7 +133,7 @@ export const useDmSocket = (socket, gameId, playerColor) => {
         });
       }
     },
-    [socket, activeDm, playerColor]
+    [socket, activeDm, playerColor],
   );
 
   const leaveDm = useCallback(() => {
@@ -120,6 +145,7 @@ export const useDmSocket = (socket, gameId, playerColor) => {
       });
       setActiveDm(null);
       setDmMessages([]);
+      setDmTyping(false);
     }
   }, [socket, activeDm, gameId, playerColor]);
 
@@ -127,6 +153,7 @@ export const useDmSocket = (socket, gameId, playerColor) => {
     dmRequests,
     activeDm,
     dmMessages,
+    dmTyping,
     requestDm,
     acceptDm,
     rejectDm,
