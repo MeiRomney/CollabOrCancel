@@ -1,11 +1,12 @@
 // botController.js
-// Controls bot actions during gameplay phases
+// Controls bot actions during gameplay phases with continuous interactions
 
 import BotAI, { assignBotPersonality } from "./botPersonalities.js";
 import { getGame, updateGame } from "../game/gameManager.js";
 
-// Store active bot timers
+// Store active bot timers and intervals
 const botTimers = new Map();
+const botIntervals = new Map();
 
 // Initialize bots with personalities when game starts
 export function initializeBots(game) {
@@ -16,11 +17,15 @@ export function initializeBots(game) {
   });
 }
 
-// Clear all bot timers for a game
+// Clear all bot timers and intervals for a game
 export function clearBotTimers(gameId) {
   const timers = botTimers.get(gameId) || [];
   timers.forEach((timer) => clearTimeout(timer));
   botTimers.delete(gameId);
+
+  const intervals = botIntervals.get(gameId) || [];
+  intervals.forEach((interval) => clearInterval(interval));
+  botIntervals.delete(gameId);
 }
 
 // Add timer to tracking
@@ -29,6 +34,241 @@ function addTimer(gameId, timer) {
     botTimers.set(gameId, []);
   }
   botTimers.get(gameId).push(timer);
+}
+
+// Add interval to tracking
+function addInterval(gameId, interval) {
+  if (!botIntervals.has(gameId)) {
+    botIntervals.set(gameId, []);
+  }
+  botIntervals.get(gameId).push(interval);
+}
+
+// Generate context based on current game phase
+function getPhaseContext(phase) {
+  const contexts = {
+    COLLAB_PROPOSAL: [
+      "Thinking about who to trust...",
+      "Should we form alliances?",
+      "Looking at the current situation...",
+      "Analyzing the proposals...",
+    ],
+    COLLAB_VOTING: [
+      "Time to vote on these collabs",
+      "Which proposal looks best?",
+      "Need to choose wisely here",
+      "Let me analyze these options...",
+    ],
+    DM_PHASE: [
+      "Time for some private conversations",
+      "What's everyone planning?",
+      "This phase is crucial...",
+      "Need to gather information",
+    ],
+    ACTION_PHASE: [
+      "Decision time is approaching",
+      "Who looks most suspicious?",
+      "Need to think carefully about this vote",
+      "The votes are piling up...",
+    ],
+  };
+
+  const phaseContexts = contexts[phase] || ["What's happening?"];
+  return phaseContexts[Math.floor(Math.random() * phaseContexts.length)];
+}
+
+// CONTINUOUS PUBLIC CHAT - Bots chat randomly throughout each phase
+export function startContinuousBotChat(io, gameId) {
+  const game = getGame(gameId);
+  if (!game) return;
+
+  console.log(`🔄 Starting continuous chat for game ${gameId}`);
+
+  // Create an interval that triggers bot messages
+  const chatInterval = setInterval(async () => {
+    const currentGame = getGame(gameId);
+    if (!currentGame || currentGame.phase === "GAME_OVER") {
+      clearInterval(chatInterval);
+      return;
+    }
+
+    const bots = currentGame.players.filter((p) => p.isBot && p.alive);
+
+    // Each bot has a chance to chat
+    for (const bot of bots) {
+      // Random chance to chat (30% per interval)
+      if (Math.random() < 0.3) {
+        try {
+          const { generateBotChatMessage } = await import("./botAIChat.js");
+
+          // Generate context based on current phase
+          const context = getPhaseContext(currentGame.phase);
+
+          const message = await generateBotChatMessage(
+            bot,
+            currentGame,
+            context,
+          );
+
+          io.to(gameId).emit("message-received", {
+            message,
+            senderColor: bot.color,
+            timestamp: Date.now(),
+          });
+
+          console.log(`💬 Bot ${bot.name}: ${message}`);
+        } catch (error) {
+          console.error("Bot chat error:", error);
+        }
+      }
+    }
+  }, 8000); // Check every 8 seconds
+
+  addInterval(gameId, chatInterval);
+  console.log(`✅ Continuous chat started for game ${gameId}`);
+}
+
+// CONTINUOUS DM INTERACTIONS - Bots send DMs throughout DM phase
+export function startContinuousBotDMs(io, gameId) {
+  const game = getGame(gameId);
+  if (!game) return;
+
+  console.log(`💌 Starting continuous DMs for game ${gameId}`);
+
+  const dmInterval = setInterval(async () => {
+    const currentGame = getGame(gameId);
+    if (!currentGame || currentGame.phase !== "DM_PHASE") {
+      clearInterval(dmInterval);
+      return;
+    }
+
+    const bots = currentGame.players.filter((p) => p.isBot && p.alive);
+
+    for (const bot of bots) {
+      // Check if bot has any active DM conversations
+      const activeDMs =
+        currentGame.dms?.filter(
+          (dm) => dm.participants.includes(bot.color) && dm.status === "active",
+        ) || [];
+
+      // Send messages in existing DMs
+      if (activeDMs.length > 0 && Math.random() < 0.4) {
+        const dm = activeDMs[Math.floor(Math.random() * activeDMs.length)];
+        const recipient = dm.participants.find((p) => p !== bot.color);
+
+        try {
+          const { generateBotDMMessage } = await import("./botAIChat.js");
+          const message = await generateBotDMMessage(
+            bot,
+            currentGame,
+            recipient,
+            dm.messages || [],
+          );
+
+          // Emit DM message
+          io.to(gameId).emit("dm-message", {
+            dmId: dm.id,
+            message,
+            senderColor: bot.color,
+            timestamp: Date.now(),
+          });
+
+          console.log(`📨 Bot ${bot.name} -> DM: ${message}`);
+        } catch (error) {
+          console.error("Bot DM error:", error);
+        }
+      }
+
+      // Initiate new DMs occasionally
+      if (Math.random() < 0.15 && activeDMs.length < 2) {
+        const alivePlayers = currentGame.players.filter(
+          (p) => p.alive && p.id !== bot.id,
+        );
+
+        if (alivePlayers.length > 0) {
+          const target =
+            alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+
+          io.to(gameId).emit("dm-requested", {
+            from: bot.color,
+            to: target.color,
+          });
+
+          console.log(`📨 Bot ${bot.name} requested DM with ${target.name}`);
+        }
+      }
+    }
+  }, 10000); // Check every 10 seconds
+
+  addInterval(gameId, dmInterval);
+  console.log(`✅ Continuous DMs started for game ${gameId}`);
+}
+
+// CONTINUOUS VOTING - Bots can change votes multiple times
+export function startContinuousBotVoting(io, gameId) {
+  const game = getGame(gameId);
+  if (!game) return;
+
+  console.log(`🗳️ Starting continuous voting for game ${gameId}`);
+
+  const votingInterval = setInterval(async () => {
+    const currentGame = getGame(gameId);
+    if (!currentGame || currentGame.phase !== "ACTION_PHASE") {
+      clearInterval(votingInterval);
+      return;
+    }
+
+    const bots = currentGame.players.filter((p) => p.isBot && p.alive);
+
+    for (const bot of bots) {
+      // 25% chance to change vote each interval
+      if (Math.random() < 0.25) {
+        const ai = new BotAI(bot, currentGame);
+        const alivePlayers = currentGame.players.filter(
+          (p) => p.alive && p.id !== bot.id,
+        );
+        const targets = alivePlayers.map((p) => p.color);
+
+        let target;
+
+        // Try AI-powered decision
+        try {
+          const { analyzeBotVoting } = await import("./botAIChat.js");
+          const aiDecision = await analyzeBotVoting(bot, currentGame, targets);
+          if (aiDecision) {
+            target = aiDecision.target;
+            console.log(
+              `🤖 AI Decision: ${bot.name} -> ${target} (${aiDecision.reasoning})`,
+            );
+          }
+        } catch (error) {
+          console.log("Using fallback voting logic");
+        }
+
+        // Fallback to regular AI logic
+        if (!target) {
+          target = ai.chooseVoteTarget();
+        }
+
+        if (target) {
+          updateGame(gameId, (g) => {
+            if (!g.votes) g.votes = {};
+            g.votes[bot.color] = target;
+          });
+
+          const updatedGame = getGame(gameId);
+          io.to(gameId).emit("vote-updated", {
+            votes: updatedGame.votes || {},
+          });
+
+          console.log(`🤖 Bot ${bot.name} voted for: ${target}`);
+        }
+      }
+    }
+  }, 7000); // Check every 7 seconds
+
+  addInterval(gameId, votingInterval);
+  console.log(`✅ Continuous voting started for game ${gameId}`);
 }
 
 // Bot actions during COLLAB_PROPOSAL phase
@@ -79,7 +319,7 @@ export function handleBotCollabProposals(io, gameId) {
   });
 }
 
-// Bot actions during collab voting
+// Bot actions during COLLAB_VOTING phase
 export function handleBotCollabVoting(io, gameId) {
   const game = getGame(gameId);
   if (!game) return;
@@ -175,70 +415,6 @@ export function handleBotAbilities(io, gameId) {
   });
 }
 
-// Bot actions during voting phase - CAN VOTE ANYTIME
-export function handleBotVoting(io, gameId) {
-  const game = getGame(gameId);
-  if (!game) return;
-
-  const bots = game.players.filter((p) => p.isBot && p.alive);
-
-  bots.forEach((bot) => {
-    const ai = new BotAI(bot, game);
-
-    // Random chance to change vote during the phase
-    const voteChanges = Math.floor(Math.random() * 3) + 1; // 1-3 vote changes
-
-    for (let i = 0; i < voteChanges; i++) {
-      const delay = ai.getDecisionDelay() * (i + 1) + Math.random() * 3000;
-
-      const timer = setTimeout(async () => {
-        const alivePlayers = game.players.filter(
-          (p) => p.alive && p.id !== bot.id,
-        );
-        const targets = alivePlayers.map((p) => p.color);
-
-        // Try AI-powered decision first
-        let target;
-        try {
-          const { analyzeBotVoting } = await import("./botAIChat.js");
-          const aiDecision = await analyzeBotVoting(bot, game, targets);
-          if (aiDecision) {
-            target = aiDecision.target;
-            console.log(
-              `🤖 AI Decision: ${bot.name} -> ${target} (${aiDecision.reasoning})`,
-            );
-          }
-        } catch (error) {
-          console.log("Using fallback voting logic");
-        }
-
-        // Fallback to regular AI logic
-        if (!target) {
-          target = ai.chooseVoteTarget();
-        }
-
-        if (target) {
-          updateGame(gameId, (g) => {
-            if (!g.votes) g.votes = {};
-            g.votes[bot.color] = target;
-          });
-
-          const updatedGame = getGame(gameId);
-          io.to(gameId).emit("vote-updated", {
-            votes: updatedGame.votes || {},
-          });
-
-          console.log(
-            `🤖 Bot ${bot.name} voted for: ${target} (change ${i + 1})`,
-          );
-        }
-      }, delay);
-
-      addTimer(gameId, timer);
-    }
-  });
-}
-
 // Bot "typing" simulation during DM phase
 export function simulateBotTyping(io, gameId) {
   const game = getGame(gameId);
@@ -270,13 +446,11 @@ export function simulateBotTyping(io, gameId) {
 
 // Get available abilities for a role
 function getAvailableAbilities(role) {
-  // This should match your game's role system
   const abilityMap = {
     VIBER: ["boost_vibe", "drain_vibe"],
     AURA_READER: ["read_aura", "sense_role"],
     PROTECTOR: ["protect", "shield"],
     SABOTEUR: ["sabotage", "weaken"],
-    // Add more roles as needed
   };
 
   return abilityMap[role] || [];
@@ -332,125 +506,43 @@ export function updateBotMemories(game, resolutionResults) {
 export function handleBotPhase(io, gameId, phase) {
   console.log(`🤖 Bot phase handler: ${phase} for game ${gameId}`);
 
-  // Clear previous timers
+  // Clear previous timers and intervals
   clearBotTimers(gameId);
+
+  // START CONTINUOUS CHAT FOR ALL PHASES
+  startContinuousBotChat(io, gameId);
 
   switch (phase) {
     case "COLLAB_PROPOSAL":
       // Bots decide whether to propose collabs
       setTimeout(() => {
         handleBotCollabProposals(io, gameId);
-        // Bots send chat messages about phase
-        handleBotPublicChat(io, gameId, "Looking for collab partners!");
-        // After some time, bots vote
-        setTimeout(() => {
-          handleBotCollabVoting(io, gameId);
-        }, 8000);
+      }, 2000);
+      break;
+
+    case "COLLAB_VOTING":
+      // Bots vote on collab proposals
+      setTimeout(() => {
+        handleBotCollabVoting(io, gameId);
       }, 2000);
       break;
 
     case "DM_PHASE":
-      // Bots use abilities
+      // Bots use abilities and start DM conversations
       setTimeout(() => {
         handleBotAbilities(io, gameId);
         simulateBotTyping(io, gameId);
-        handleBotPublicChat(io, gameId, "DM phase thoughts...");
-        // Bots might initiate DMs
-        handleBotDMInitiation(io, gameId);
+        startContinuousBotDMs(io, gameId);
       }, 3000);
       break;
 
-    case "VOTING_PHASE":
+    case "ACTION_PHASE":
       // Bots vote for elimination (can change votes multiple times)
       setTimeout(() => {
-        handleBotVoting(io, gameId);
-        handleBotPublicChat(io, gameId, "Time to vote...");
+        startContinuousBotVoting(io, gameId);
       }, 2000);
       break;
   }
-}
-
-// Bots send messages in public chat
-export function handleBotPublicChat(io, gameId, context = "") {
-  const game = getGame(gameId);
-  if (!game) return;
-
-  const bots = game.players.filter((p) => p.isBot && p.alive);
-
-  // Random subset of bots chat (not all at once)
-  const chattingBots = bots.filter(() => Math.random() < 0.6);
-
-  chattingBots.forEach((bot, index) => {
-    const delay = (index + 1) * (2000 + Math.random() * 3000);
-
-    const timer = setTimeout(async () => {
-      try {
-        const { generateBotChatMessage } = await import("./botAIChat.js");
-        const message = await generateBotChatMessage(bot, game, context);
-
-        io.to(gameId).emit("message-received", {
-          message,
-          senderColor: bot.color,
-          timestamp: Date.now(),
-        });
-
-        console.log(`💬 Bot ${bot.name}: ${message}`);
-      } catch (error) {
-        console.error("Bot chat error:", error);
-      }
-    }, delay);
-
-    addTimer(gameId, timer);
-  });
-}
-
-// Bots decide whether to initiate DMs
-export function handleBotDMInitiation(io, gameId) {
-  const game = getGame(gameId);
-  if (!game) return;
-
-  const bots = game.players.filter((p) => p.isBot && p.alive);
-
-  bots.forEach((bot) => {
-    // Each bot has a chance to initiate a DM
-    if (Math.random() < 0.3) {
-      const ai = new BotAI(bot, game);
-      const alivePlayers = game.players.filter(
-        (p) => p.alive && p.id !== bot.id,
-      );
-
-      // Choose target based on personality
-      let target;
-      if (bot.memory?.allies?.length > 0) {
-        // Prefer allies
-        const allies = alivePlayers.filter((p) =>
-          bot.memory.allies.includes(p.color),
-        );
-        if (allies.length > 0) {
-          target = allies[Math.floor(Math.random() * allies.length)];
-        }
-      }
-
-      if (!target) {
-        target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-      }
-
-      if (target) {
-        const delay = 3000 + Math.random() * 5000;
-
-        const timer = setTimeout(() => {
-          io.to(gameId).emit("dm-requested", {
-            from: bot.color,
-            to: target.color,
-          });
-
-          console.log(`📨 Bot ${bot.name} requested DM with ${target.name}`);
-        }, delay);
-
-        addTimer(gameId, timer);
-      }
-    }
-  });
 }
 
 export default {

@@ -1,10 +1,5 @@
-// botAIChat.js
-// AI-powered bot chat using Google Gemini API
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize Gemini API
-// Get your API key from: https://makersuite.google.com/app/apikey
 const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY || "YOUR_API_KEY_HERE",
 );
@@ -34,7 +29,7 @@ class BotChatAI {
     this.bot = bot;
     this.game = game;
     this.personality = bot.personality;
-    this.model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    this.model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash" });
     this.conversationHistory = [];
   }
 
