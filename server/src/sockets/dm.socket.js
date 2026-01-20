@@ -1,13 +1,18 @@
-// dmSockets.js - Enhanced with Bot AI responses
-import { getGame } from "../game/gameManager.js";
+// dmSockets.js - Unified version
+import { getGame, updateGame } from "../game/gameManager.js";
 import { decideBotDMResponse, generateBotDMMessage } from "../ai/botAIChat.js";
-
-// Store active DM conversations and message history
-const dmConversations = new Map();
 
 export const registerDmSockets = (io, socket) => {
   socket.on("request-dm", async ({ gameId, from, to }) => {
-    // Emit to entire game room so front end can show the request
+    // Store in game state
+    updateGame(gameId, (game) => {
+      if (!game.pendingDMRequests) {
+        game.pendingDMRequests = [];
+      }
+      game.pendingDMRequests.push({ from, to, timestamp: Date.now() });
+    });
+
+    // Emit to entire game room
     io.to(gameId).emit("dm-requested", { from, to });
 
     // Check if recipient is a bot
@@ -24,75 +29,14 @@ export const registerDmSockets = (io, socket) => {
             const decision = await decideBotDMResponse(recipient, game, from);
 
             if (decision.accept) {
-              // Bot accepts DM
-              const dmRoom = `dm-${gameId}-${from}-${to}`;
-
-              // Get sockets for both players
-              const sockets = Array.from(io.sockets.sockets.values());
-              const fromSocket = sockets.find(
-                (s) =>
-                  s.data?.gameId === gameId && s.data?.playerColor === from,
+              // Bot accepts - use the shared accept handler
+              handleDMAccept(io, gameId, from, to, recipient);
+              console.log(
+                `🤖 Bot ${recipient.name} accepted DM: ${decision.reason}`,
               );
-              const toSocket = sockets.find(
-                (s) => s.data?.gameId === gameId && s.data?.playerColor === to,
-              );
-
-              if (fromSocket && toSocket) {
-                fromSocket.join(dmRoom);
-                toSocket.join(dmRoom);
-
-                // Initialize conversation history
-                dmConversations.set(dmRoom, []);
-
-                // Notify both players that DM started
-                io.to(gameId).emit("dm-started", { from, to, room: dmRoom });
-                io.to(gameId).emit("dm-accepted", { from, to });
-
-                console.log(
-                  `🤖 Bot ${recipient.name} accepted DM: ${decision.reason}`,
-                );
-
-                // Bot sends first message after a delay
-                setTimeout(
-                  async () => {
-                    try {
-                      const botMessage = await generateBotDMMessage(
-                        recipient,
-                        game,
-                        from,
-                        dmConversations.get(dmRoom) || [],
-                      );
-
-                      const messageData = {
-                        message: botMessage,
-                        senderColor: to,
-                        timestamp: Date.now(),
-                      };
-
-                      // Store in history
-                      const history = dmConversations.get(dmRoom) || [];
-                      history.push(messageData);
-                      dmConversations.set(dmRoom, history);
-
-                      io.to(dmRoom).emit("dm-message-received", messageData);
-
-                      console.log(
-                        `💬 Bot DM: ${recipient.name} -> ${botMessage}`,
-                      );
-                    } catch (error) {
-                      console.error("Bot DM message error:", error);
-                    }
-                  },
-                  2000 + Math.random() * 3000,
-                );
-              }
             } else {
-              // Bot rejects DM
-              io.to(gameId).emit("dm-rejected", {
-                from,
-                to,
-                reason: decision.reason,
-              });
+              // Bot rejects
+              handleDMReject(io, gameId, from, to, decision.reason);
               console.log(
                 `🤖 Bot ${recipient.name} rejected DM: ${decision.reason}`,
               );
@@ -101,47 +45,23 @@ export const registerDmSockets = (io, socket) => {
             console.error("Bot DM decision error:", error);
             // Fallback to random decision
             if (Math.random() > 0.3) {
-              io.to(gameId).emit("dm-accepted", { from, to });
+              handleDMAccept(io, gameId, from, to, recipient);
             } else {
-              io.to(gameId).emit("dm-rejected", { from, to });
+              handleDMReject(io, gameId, from, to);
             }
           }
         },
         1500 + Math.random() * 2000,
-      ); // Bot thinks for 1.5-3.5 seconds
+      );
     }
   });
 
   socket.on("accept-dm", ({ gameId, from, to }) => {
-    // Create a private room for these two players
-    const dmRoom = `dm-${gameId}-${from}-${to}`;
-
-    // Get sockets for both players
-    const sockets = Array.from(io.sockets.sockets.values());
-    const fromSocket = sockets.find(
-      (s) => s.data?.gameId === gameId && s.data?.playerColor === from,
-    );
-    const toSocket = sockets.find(
-      (s) => s.data?.gameId === gameId && s.data?.playerColor === to,
-    );
-
-    if (fromSocket && toSocket) {
-      fromSocket.join(dmRoom);
-      toSocket.join(dmRoom);
-
-      // Initialize conversation history
-      dmConversations.set(dmRoom, []);
-
-      // Notify both players that DM started
-      io.to(gameId).emit("dm-started", { from, to, room: dmRoom });
-    }
-
-    // Notify game room that DM was accepted
-    io.to(gameId).emit("dm-accepted", { from, to });
+    handleDMAccept(io, gameId, from, to);
   });
 
   socket.on("reject-dm", ({ gameId, from, to }) => {
-    io.to(gameId).emit("dm-rejected", { from, to });
+    handleDMReject(io, gameId, from, to);
   });
 
   socket.on("send-dm-message", async ({ room, message, senderColor }) => {
@@ -151,28 +71,28 @@ export const registerDmSockets = (io, socket) => {
       timestamp: Date.now(),
     };
 
-    // Store message in history
-    const history = dmConversations.get(room) || [];
-    history.push(messageData);
-    dmConversations.set(room, history);
+    // Store message in game state
+    const [, gameId, color1, color2] = room.split("-");
+    updateGame(gameId, (game) => {
+      const dm = game.dms?.find((d) => d.room === room);
+      if (dm) {
+        dm.messages.push(messageData);
+      }
+    });
 
     // Send to room
     io.to(room).emit("dm-message-received", messageData);
 
-    // Check if recipient is a bot and generate response
-    const [, gameId, color1, color2] = room.split("-");
+    // Check if recipient is a bot
     const recipientColor = senderColor === color1 ? color2 : color1;
-
     const game = getGame(gameId);
     if (!game) return;
 
     const recipient = game.players.find((p) => p.color === recipientColor);
 
     if (recipient && recipient.isBot) {
-      // Bot responds after reading the message
-      const thinkingTime = 2000 + Math.random() * 4000; // 2-6 seconds
+      const thinkingTime = 2000 + Math.random() * 4000;
 
-      // Show typing indicator
       setTimeout(() => {
         io.to(room).emit("dm-typing", {
           playerColor: recipientColor,
@@ -182,9 +102,13 @@ export const registerDmSockets = (io, socket) => {
 
       setTimeout(async () => {
         try {
+          const currentGame = getGame(gameId);
+          const dm = currentGame?.dms?.find((d) => d.room === room);
+          const history = dm?.messages || [];
+
           const botMessage = await generateBotDMMessage(
             recipient,
-            game,
+            currentGame,
             senderColor,
             history,
           );
@@ -196,27 +120,22 @@ export const registerDmSockets = (io, socket) => {
           };
 
           // Store bot's message
-          history.push(botMessageData);
-          dmConversations.set(room, history);
+          updateGame(gameId, (game) => {
+            const dm = game.dms?.find((d) => d.room === room);
+            if (dm) {
+              dm.messages.push(botMessageData);
+            }
+          });
 
-          // Stop typing indicator
           io.to(room).emit("dm-typing", {
             playerColor: recipientColor,
             isTyping: false,
           });
 
-          // Send message
           io.to(room).emit("dm-message-received", botMessageData);
-
           console.log(`💬 Bot DM Response: ${recipient.name} -> ${botMessage}`);
         } catch (error) {
           console.error("Bot DM response error:", error);
-          // Fallback response
-          io.to(room).emit("dm-message-received", {
-            message: "Interesting...",
-            senderColor: recipientColor,
-            timestamp: Date.now(),
-          });
         }
       }, thinkingTime);
     }
@@ -226,26 +145,117 @@ export const registerDmSockets = (io, socket) => {
     socket.leave(room);
     io.to(room).emit("dm-ended", { playerColor });
 
-    // Clean up conversation history after a delay
-    setTimeout(() => {
-      dmConversations.delete(room);
-    }, 5000);
+    // Update game state
+    updateGame(gameId, (game) => {
+      const dm = game.dms?.find((d) => d.room === room);
+      if (dm) {
+        dm.status = "ended";
+      }
+    });
   });
 
-  // Handle disconnect - clean up DM rooms
   socket.on("disconnect", () => {
-    // Find and clean up any DM rooms this socket was in
     const gameId = socket.data?.gameId;
     const playerColor = socket.data?.playerColor;
 
     if (gameId && playerColor) {
-      // Find DM rooms for this player
-      dmConversations.forEach((history, room) => {
-        if (room.includes(gameId) && room.includes(playerColor)) {
-          io.to(room).emit("dm-ended", { playerColor });
-          setTimeout(() => dmConversations.delete(room), 5000);
-        }
+      const game = getGame(gameId);
+      const playerDMs = game?.dms?.filter(
+        (dm) => dm.participants.includes(playerColor) && dm.status === "active",
+      );
+
+      playerDMs?.forEach((dm) => {
+        io.to(dm.room).emit("dm-ended", { playerColor });
+        updateGame(gameId, (game) => {
+          const foundDM = game.dms?.find((d) => d.room === dm.room);
+          if (foundDM) {
+            foundDM.status = "ended";
+          }
+        });
       });
     }
   });
 };
+
+// Helper functions
+function handleDMAccept(io, gameId, from, to, botPlayer = null) {
+  const room = `dm-${gameId}-${from}-${to}`;
+
+  updateGame(gameId, (game) => {
+    if (!game.dms) game.dms = [];
+
+    game.dms.push({
+      room,
+      participants: [from, to],
+      messages: [],
+      status: "active",
+      createdAt: Date.now(),
+    });
+
+    // Remove from pending
+    game.pendingDMRequests = (game.pendingDMRequests || []).filter(
+      (r) => !(r.from === from && r.to === to),
+    );
+  });
+
+  // Get sockets and join room
+  const sockets = Array.from(io.sockets.sockets.values());
+  const fromSocket = sockets.find(
+    (s) => s.data?.gameId === gameId && s.data?.playerColor === from,
+  );
+  const toSocket = sockets.find(
+    (s) => s.data?.gameId === gameId && s.data?.playerColor === to,
+  );
+
+  if (fromSocket) fromSocket.join(room);
+  if (toSocket) toSocket.join(room);
+
+  io.to(gameId).emit("dm-accepted", { from, to });
+  io.to(gameId).emit("dm-started", { from, to, room });
+
+  // If bot accepted, send initial message
+  if (botPlayer) {
+    setTimeout(
+      async () => {
+        try {
+          const game = getGame(gameId);
+          const botMessage = await generateBotDMMessage(
+            botPlayer,
+            game,
+            from,
+            [],
+          );
+
+          const messageData = {
+            message: botMessage,
+            senderColor: to,
+            timestamp: Date.now(),
+          };
+
+          updateGame(gameId, (game) => {
+            const dm = game.dms?.find((d) => d.room === room);
+            if (dm) {
+              dm.messages.push(messageData);
+            }
+          });
+
+          io.to(room).emit("dm-message-received", messageData);
+          console.log(`💬 Bot DM: ${botPlayer.name} -> ${botMessage}`);
+        } catch (error) {
+          console.error("Bot initial DM error:", error);
+        }
+      },
+      2000 + Math.random() * 3000,
+    );
+  }
+}
+
+function handleDMReject(io, gameId, from, to, reason = null) {
+  updateGame(gameId, (game) => {
+    game.pendingDMRequests = (game.pendingDMRequests || []).filter(
+      (r) => !(r.from === from && r.to === to),
+    );
+  });
+
+  io.to(gameId).emit("dm-rejected", { from, to, reason });
+}

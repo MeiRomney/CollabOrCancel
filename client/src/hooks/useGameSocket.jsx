@@ -134,6 +134,27 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       setCurrentEvent(data.event);
     });
 
+    // FIXED: Handle ability-used notifications
+    socket.on("ability-used", ({ playerColor: targetColor, message, type }) => {
+      // Only show toast to the relevant player (targetColor is who should see this notification)
+      if (targetColor === playerColor) {
+        // Show toast notification based on type
+        switch (type) {
+          case "success":
+            toast.success(message);
+            break;
+          case "warning":
+            toast.success(message);
+            break;
+          case "info":
+            toast.success(message);
+            break;
+          default:
+            toast.success(message);
+        }
+      }
+    });
+
     socket.on("round-resolved", (results) => {
       setRoundResults(results);
 
@@ -234,6 +255,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       socket.off("vote-updated");
       socket.off("collab-resolved");
       socket.off("event-drawn");
+      socket.off("ability-used");
       socket.off("round-resolved");
       socket.off("game-over");
       socket.off("player-joined");

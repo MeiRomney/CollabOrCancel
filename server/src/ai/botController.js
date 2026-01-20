@@ -1,6 +1,3 @@
-// botController.js
-// Controls bot actions during gameplay phases with continuous interactions
-
 import BotAI, { assignBotPersonality } from "./botPersonalities.js";
 import { getGame, updateGame } from "../game/gameManager.js";
 
@@ -148,7 +145,8 @@ export function startContinuousBotDMs(io, gameId) {
       // Check if bot has any active DM conversations
       const activeDMs =
         currentGame.dms?.filter(
-          (dm) => dm.participants.includes(bot.color) && dm.status === "active",
+          (dm) =>
+            dm.participants?.includes(bot.color) && dm.status === "active",
         ) || [];
 
       // Send messages in existing DMs
@@ -166,8 +164,8 @@ export function startContinuousBotDMs(io, gameId) {
           );
 
           // Emit DM message
-          io.to(gameId).emit("dm-message", {
-            dmId: dm.id,
+          io.to(gameId).emit("dm-message-received", {
+            room: dm.room,
             message,
             senderColor: bot.color,
             timestamp: Date.now(),
@@ -382,6 +380,42 @@ export function handleBotCollabVoting(io, gameId) {
   });
 }
 
+// Get available abilities based on role (matching resolver.js)
+function getAvailableAbilities(role) {
+  // All players have access to these abilities
+  const commonAbilities = ["attack", "heal", "defend", "sabotage"];
+  return commonAbilities;
+}
+
+// Get ability description for toast message
+function getAbilityDescription(ability, actorName, targetName, isSelf) {
+  const descriptions = {
+    attack: {
+      actor: `You attacked ${targetName}!`,
+      target: `${actorName} attacked you!`,
+    },
+    heal: {
+      actor: isSelf ? `You healed yourself!` : `You healed ${targetName}!`,
+      target: `${actorName} healed you!`,
+    },
+    defend: {
+      actor: isSelf ? `You defended yourself!` : `You defended ${targetName}!`,
+      target: `${actorName} is defending you!`,
+    },
+    sabotage: {
+      actor: `You sabotaged ${targetName}!`,
+      target: `${actorName} sabotaged you!`,
+    },
+  };
+
+  return (
+    descriptions[ability] || {
+      actor: `You used ${ability} on ${targetName}`,
+      target: `${actorName} used ${ability} on you`,
+    }
+  );
+}
+
 // Bot actions during DM phase (abilities)
 export function handleBotAbilities(io, gameId) {
   const game = getGame(gameId);
@@ -394,20 +428,56 @@ export function handleBotAbilities(io, gameId) {
     const delay = ai.getDecisionDelay();
 
     const timer = setTimeout(() => {
-      // Choose ability based on bot's role
+      // Get available abilities
       const abilities = getAvailableAbilities(bot.role);
       if (abilities.length === 0) return;
 
+      // Choose ability based on AI logic
       const ability = abilities[Math.floor(Math.random() * abilities.length)];
       const target = ai.chooseAbilityTarget(ability);
 
       if (target) {
+        // Store ability in game state
         updateGame(gameId, (g) => {
           if (!g.abilities) g.abilities = {};
           g.abilities[bot.color] = { ability, target };
         });
 
-        console.log(`🤖 Bot ${bot.name} used ability: ${ability} on ${target}`);
+        // Get player names for toast messages
+        const targetPlayer = game.players.find((p) => p.color === target);
+        const isSelf = target === bot.color;
+
+        if (!targetPlayer) return;
+
+        const descriptions = getAbilityDescription(
+          ability,
+          bot.name,
+          targetPlayer.name,
+          isSelf,
+        );
+
+        // Send toast to the bot (actor)
+        io.to(gameId).emit("ability-used", {
+          playerColor: bot.color,
+          message: descriptions.actor,
+          type: "success",
+        });
+
+        // Send toast to the target (if not self)
+        if (!isSelf) {
+          io.to(gameId).emit("ability-used", {
+            playerColor: target,
+            message: descriptions.target,
+            type:
+              ability === "attack" || ability === "sabotage"
+                ? "warning"
+                : "info",
+          });
+        }
+
+        console.log(
+          `🤖 Bot ${bot.name} used ${ability} on ${targetPlayer.name}`,
+        );
       }
     }, delay);
 
@@ -442,18 +512,6 @@ export function simulateBotTyping(io, gameId) {
       }, Math.random() * 5000);
     }
   });
-}
-
-// Get available abilities for a role
-function getAvailableAbilities(role) {
-  const abilityMap = {
-    VIBER: ["boost_vibe", "drain_vibe"],
-    AURA_READER: ["read_aura", "sense_role"],
-    PROTECTOR: ["protect", "shield"],
-    SABOTEUR: ["sabotage", "weaken"],
-  };
-
-  return abilityMap[role] || [];
 }
 
 // Update bot memories after round resolution
