@@ -382,8 +382,12 @@ export function handleBotCollabVoting(io, gameId) {
 
 // Get available abilities based on role (matching resolver.js)
 function getAvailableAbilities(role) {
+  if (role === "doomer") {
+    const doomerAbilities = ["attack", "heal", "defend", "invisibleSabotage"];
+    return doomerAbilities;
+  }
   // All players have access to these abilities
-  const commonAbilities = ["attack", "heal", "defend", "sabotage"];
+  const commonAbilities = ["heal", "defend", "sabotage"];
   return commonAbilities;
 }
 
@@ -588,7 +592,6 @@ export function handleBotPhase(io, gameId, phase) {
     case "DM_PHASE":
       // Bots use abilities and start DM conversations
       setTimeout(() => {
-        handleBotAbilities(io, gameId);
         simulateBotTyping(io, gameId);
         startContinuousBotDMs(io, gameId);
       }, 3000);
@@ -597,6 +600,7 @@ export function handleBotPhase(io, gameId, phase) {
     case "ACTION_PHASE":
       // Bots vote for elimination (can change votes multiple times)
       setTimeout(() => {
+        handleBotAbilities(io, gameId);
         startContinuousBotVoting(io, gameId);
       }, 2000);
       break;

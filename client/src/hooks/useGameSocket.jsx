@@ -34,7 +34,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       setMyPlayer(state.myPlayer);
       setOtherPlayers(state.otherPlayers);
       setCollabProposals(state.collabProposals || []);
-      setSkipVotes(state.skipVotes || []);
+      setSkipVotes(state.skipVotes || []); // Updated
       setVotes(state.votes || {});
       setCurrentEvent(state.currentEvent);
     });
@@ -64,7 +64,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       }
 
       setCollabProposals(state.collabProposals || []);
-      setSkipVotes(state.skipVotes || []);
+      setSkipVotes(state.skipVotes || []); // Updated
       setVotes(state.votes || {});
       setCurrentEvent(state.currentEvent);
     });
@@ -90,7 +90,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
     socket.on("collab-proposed", (data) => {
       console.log("Collab proposed:", data);
       setCollabProposals(data.proposals || []);
-      setSkipVotes(data.skipVotes || []);
+      setSkipVotes(data.skipVotes || []); // Updated
 
       if (data.proposals && data.proposals.length > 0) {
         const latestProposal = data.proposals[data.proposals.length - 1];
@@ -107,7 +107,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
       console.log("Collab vote updated:", data);
       // Update local state for proposals and skip voters
       if (data.proposals) setCollabProposals(data.proposals);
-      if (data.skipVotes) setSkipVotes(data.skipVotes);
+      if (data.skipVotes) setSkipVotes(data.skipVotes); // Updated
     });
 
     socket.on("vote-updated", (data) => {
@@ -121,12 +121,17 @@ export const useGameSocket = (socket, gameId, playerColor) => {
     socket.on("collab-resolved", (results) => {
       console.log("Collab resolved:", results);
 
-      if (results.tie) {
+      if (results.skipped) {
+        toast.success("Skip votes won! No collab this round");
+        setCollabHost("waiting");
+      } else if (results.tie) {
         toast.success("Collab vote tied! All participants gain +1 Aura");
         setCollabHost("waiting");
       } else if (results.winningCollab) {
         toast.success(`${results.winningCollab.proposer}'s collab won!`);
         setCollabHost(results.winningCollab.proposer);
+      } else {
+        setCollabHost("waiting");
       }
     });
 
@@ -324,7 +329,7 @@ export const useGameSocket = (socket, gameId, playerColor) => {
     currentEvent,
     collabProposals,
     collabHost,
-    skipVotes,
+    skipVotes, // Updated export name
     votes,
     roundResults,
     gameOverData,

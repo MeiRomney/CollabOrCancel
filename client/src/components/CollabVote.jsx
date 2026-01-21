@@ -8,23 +8,12 @@ const CollabVote = ({
   onVote,
   onClose,
 }) => {
-  // const proposers = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
-  // const voters = ["red", "blue", "green", "pink", "orange", "yellow", "black", "white"];
-  // const SKIP = "skip";
-  // const mockVotes = {
-  //     red: "blue",
-  //     blue: "red",
-  //     green: "red",
-  //     pink: "yellow",
-  //     orange: "red",
-  //     yellow: "blue",
-  //     black: "red",
-  //     white: "green",
-  // };
-
-  // const [votes, setVotes] = useState(mockVotes);
   const [pendingVote, setPendingVote] = useState(null);
   const [myVote, setMyVote] = useState(null);
+
+  // Debug: Log the skipVotes
+  console.log("CollabVote - skipVotes:", skipVotes);
+  console.log("CollabVote - proposals:", proposals);
 
   const handleVoteClick = (collabId) => {
     setPendingVote(collabId);
@@ -95,6 +84,7 @@ const CollabVote = ({
                       <img
                         src={`/images/charactersHead/${proposal.proposer}.png`}
                         className="w-12 h-12 rounded-full"
+                        alt={proposal.proposer}
                       />
                       <p className="text-lg font-semibold opacity-80">
                         {proposal.proposer}
@@ -148,11 +138,6 @@ const CollabVote = ({
                 `}
         >
           <div className="flex items-start justify-between gap-4">
-            {/* Left side */}
-            {/* <div className="flex flex-col gap-2 flex-1">
-                        <p className="text-lg font-semibold opacity-80 pl-14">Skip Vote</p>
-                        <p className="text-sm opacity-60 pl-14">Cannot be defended by collab host this round</p>
-                    </div> */}
             <div className="flex flex-col gap-2 flex-1">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-lg font-bold">
@@ -162,20 +147,30 @@ const CollabVote = ({
                   Skip Vote
                 </p>
                 <p className="text-sm opacity-60 pl-5">
-                  Cannot be defended by collab host this round
+                  No collab proposal this round
                 </p>
               </div>
 
-              {/* Voters */}
+              {/* Skip voters - with debug info */}
               <div className="flex flex-wrap gap-2 pl-14">
-                {skipVotes.map((voter) => (
-                  <img
-                    key={voter}
-                    src={`/images/charactersHead/${voter}.png`}
-                    className="w-8 h-8 rounded-full"
-                    alt={voter}
-                  />
-                ))}
+                {skipVotes.length > 0 ? (
+                  skipVotes.map((voter) => (
+                    <img
+                      key={voter}
+                      src={`/images/charactersHead/${voter}.png`}
+                      className="w-8 h-8 rounded-full"
+                      alt={voter}
+                      onError={(e) => {
+                        console.error(`Failed to load image for ${voter}`);
+                        e.target.style.border = "2px solid red";
+                      }}
+                    />
+                  ))
+                ) : (
+                  <span className="text-white/50 text-sm">
+                    No skip votes yet
+                  </span>
+                )}
               </div>
             </div>
 

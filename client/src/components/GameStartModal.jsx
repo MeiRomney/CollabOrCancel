@@ -3,12 +3,12 @@ import { motion } from "framer-motion";
 import BackgroundImage from "/images/resultsBackground.png";
 
 const GameStartModal = ({ playerColor, role, allColors, onClose }) => {
-  const otherColors = allColors.filter(c => c !== playerColor);
+  const otherColors = allColors.filter((c) => c !== playerColor);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose?.(); // triggers exit animation
-    }, 5000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -17,7 +17,7 @@ const GameStartModal = ({ playerColor, role, allColors, onClose }) => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}   // 🔥 THIS NOW WORKS
+      exit={{ opacity: 0 }}
       transition={{ duration: 1 }}
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{
