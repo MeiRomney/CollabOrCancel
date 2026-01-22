@@ -249,5 +249,6 @@ function resolveRoundPhase(io, gameId) {
       timer: updatedGame.phaseTimer,
     });
     startPhaseTimer(io, gameId, "COLLAB_PROPOSAL", 60000);
+    handleBotPhase(io, gameId, updatedGame.phase);
   }
 }
