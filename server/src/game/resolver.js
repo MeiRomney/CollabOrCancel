@@ -1,5 +1,3 @@
-// Fixed resolver.js with proper elimination and vote logic
-
 export const resolveRound = (game) => {
   const changes = [];
   const events = [];
@@ -76,6 +74,11 @@ export const resolveRound = (game) => {
       });
     }
   });
+
+  game.votes = {};
+  game.abilities = {};
+  game.collabProposals = [];
+  game.skipVotes = [];
 
   return { changes, events };
 };

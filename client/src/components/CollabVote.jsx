@@ -133,9 +133,7 @@ const CollabVote = ({
         {/* Skip option */}
         <div
           onClick={() => handleVoteClick("skip")}
-          className={`relative cursor-pointer bg-white/20 p-3 rounded-xl text-white transition-all
-                    ${myVote === "skip" ? "ring-2 ring-yellow-400 scale-[1.02]" : "hover:bg-white/30"}
-                `}
+          className={`relative cursor-pointer bg-white/20 p-3 rounded-xl text-white transition-all`}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-2 flex-1">
@@ -145,9 +143,6 @@ const CollabVote = ({
                 </div>
                 <p className="text-lg font-semibold opacity-80 pl-5">
                   Skip Vote
-                </p>
-                <p className="text-sm opacity-60 pl-5">
-                  No collab proposal this round
                 </p>
               </div>
 

@@ -89,7 +89,9 @@ export function startContinuousBotChat(io, gameId) {
       return;
     }
 
-    const bots = currentGame.players.filter((p) => p.isBot && p.alive);
+    const bots = currentGame.players.filter(
+      (p) => p.isBot && p.alive && !p.eliminated,
+    );
 
     // Each bot has a chance to chat
     for (const bot of bots) {
@@ -139,7 +141,9 @@ export function startContinuousBotDMs(io, gameId) {
       return;
     }
 
-    const bots = currentGame.players.filter((p) => p.isBot && p.alive);
+    const bots = currentGame.players.filter(
+      (p) => p.isBot && p.alive && !p.eliminated,
+    );
 
     for (const bot of bots) {
       // Check if bot has any active DM conversations
@@ -216,7 +220,9 @@ export function startContinuousBotVoting(io, gameId) {
       return;
     }
 
-    const bots = currentGame.players.filter((p) => p.isBot && p.alive);
+    const bots = currentGame.players.filter(
+      (p) => p.isBot && p.alive && !p.eliminated,
+    );
 
     for (const bot of bots) {
       // 25% chance to change vote each interval
@@ -272,26 +278,74 @@ export function startContinuousBotVoting(io, gameId) {
 // Bot actions during COLLAB_PROPOSAL phase
 export function handleBotCollabProposals(io, gameId) {
   const game = getGame(gameId);
-  if (!game) return;
+  if (!game) {
+    console.log(`❌ No game found for ${gameId}`);
+    return;
+  }
 
-  const bots = game.players.filter((p) => p.isBot && p.alive);
+  const bots = game.players.filter((p) => p.isBot && p.alive && !p.eliminated);
+  console.log(
+    `🤖 [COLLAB_PROPOSAL] Found ${bots.length} eligible bots for game ${gameId}`,
+  );
+  console.log(
+    `   Bots: ${bots.map((b) => `${b.name} (${b.personality})`).join(", ")}`,
+  );
 
   bots.forEach((bot) => {
     const ai = new BotAI(bot, game);
-    const delay = ai.getDecisionDelay();
+    let attemptCount = 0;
+    const maxAttempts = 4;
 
-    const timer = setTimeout(() => {
-      const shouldPropose = ai.shouldProposeCollab();
+    // Give each bot multiple chances to propose during the phase
+    const checkProposal = () => {
+      const currentGame = getGame(gameId);
+      if (!currentGame) {
+        console.log(`❌ Game ${gameId} no longer exists`);
+        return;
+      }
+
+      if (currentGame.phase !== "COLLAB_PROPOSAL") {
+        console.log(
+          `⏭️  Bot ${bot.name}: Phase changed to ${currentGame.phase}, stopping collab checks`,
+        );
+        return;
+      }
+
+      const currentBot = currentGame.players.find((p) => p.color === bot.color);
+      if (!currentBot || !currentBot.alive || currentBot.eliminated) {
+        console.log(
+          `❌ Bot ${bot.name} is no longer eligible (alive: ${currentBot?.alive}, eliminated: ${currentBot?.eliminated})`,
+        );
+        return;
+      }
+
+      attemptCount++;
+
+      // Create new AI instance with current game state
+      const currentAI = new BotAI(currentBot, currentGame);
+      const shouldPropose = currentAI.shouldProposeCollab();
+
+      console.log(
+        `🎲 Bot ${bot.name} (${bot.personality}) attempt ${attemptCount}/${maxAttempts}:`,
+      );
+      console.log(`   - Aura: ${currentBot.aura}, Vibe: ${currentBot.vibe}`);
+      console.log(
+        `   - Base chance: ${currentAI.personality.collabProposalChance}`,
+      );
+      console.log(`   - shouldPropose: ${shouldPropose}`);
 
       if (shouldPropose) {
+        const hasExisting = currentGame.collabProposals?.find(
+          (p) => p.proposer === bot.color,
+        );
+
+        if (hasExisting) {
+          console.log(`⚠️  Bot ${bot.name} already has a proposal, skipping`);
+          return;
+        }
+
         updateGame(gameId, (g) => {
           if (!g.collabProposals) g.collabProposals = [];
-
-          // Check if bot already proposed
-          const existing = g.collabProposals.find(
-            (p) => p.proposer === bot.color,
-          );
-          if (existing) return;
 
           g.collabProposals.push({
             id: `collab-${Date.now()}-${bot.color}`,
@@ -308,11 +362,31 @@ export function handleBotCollabProposals(io, gameId) {
         });
 
         console.log(
-          `🤖 Bot ${bot.name} (${bot.personality}) proposed a collab`,
+          `✅ Bot ${bot.name} (${bot.personality}) PROPOSED a collab!`,
         );
+      } else {
+        // If bot didn't propose this time, check again later (unless max attempts reached)
+        if (attemptCount < maxAttempts) {
+          const recheckDelay = 3000 + Math.random() * 4000; // 3-7 seconds
+          console.log(
+            `⏰ Bot ${bot.name} will recheck in ${Math.round(recheckDelay / 1000)}s`,
+          );
+          const recheckTimer = setTimeout(checkProposal, recheckDelay);
+          addTimer(gameId, recheckTimer);
+        } else {
+          console.log(
+            `🛑 Bot ${bot.name} reached max attempts (${maxAttempts}), giving up`,
+          );
+        }
       }
-    }, delay);
+    };
 
+    // Initial delay before first check
+    const initialDelay = ai.getDecisionDelay();
+    console.log(
+      `⏰ Bot ${bot.name} will check collab proposal in ${Math.round(initialDelay / 1000)}s`,
+    );
+    const timer = setTimeout(checkProposal, initialDelay);
     addTimer(gameId, timer);
   });
 }
@@ -322,7 +396,7 @@ export function handleBotCollabVoting(io, gameId) {
   const game = getGame(gameId);
   if (!game) return;
 
-  const bots = game.players.filter((p) => p.isBot && p.alive);
+  const bots = game.players.filter((p) => p.isBot && p.alive && !p.eliminated);
 
   bots.forEach((bot) => {
     const ai = new BotAI(bot, game);
@@ -425,7 +499,7 @@ export function handleBotAbilities(io, gameId) {
   const game = getGame(gameId);
   if (!game) return;
 
-  const bots = game.players.filter((p) => p.isBot && p.alive);
+  const bots = game.players.filter((p) => p.isBot && p.alive && !p.eliminated);
 
   bots.forEach((bot) => {
     const ai = new BotAI(bot, game);
@@ -494,7 +568,7 @@ export function simulateBotTyping(io, gameId) {
   const game = getGame(gameId);
   if (!game) return;
 
-  const bots = game.players.filter((p) => p.isBot && p.alive);
+  const bots = game.players.filter((p) => p.isBot && p.alive && !p.eliminated);
 
   bots.forEach((bot) => {
     // Random chance to show typing indicator
@@ -520,7 +594,7 @@ export function simulateBotTyping(io, gameId) {
 
 // Update bot memories after round resolution
 export function updateBotMemories(game, resolutionResults) {
-  const bots = game.players.filter((p) => p.isBot && p.alive);
+  const bots = game.players.filter((p) => p.isBot && p.alive && !p.eliminated);
 
   bots.forEach((bot) => {
     const ai = new BotAI(bot, game);

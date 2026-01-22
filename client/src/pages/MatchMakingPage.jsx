@@ -7,7 +7,7 @@ import { useSocket } from "../contexts/SocketContext";
 const MatchMakingPage = () => {
   const navigate = useNavigate();
   const socket = useSocket();
-  
+
   // const [socket, setSocket] = useState(null);
   const [playerName, setPlayerName] = useState("");
   const [gameIdInput, setGameIdInput] = useState("");
@@ -34,7 +34,7 @@ const MatchMakingPage = () => {
     { name: "banana", hex: "#fef08a" },
     { name: "gray", hex: "#6b7280" },
     { name: "tan", hex: "#d2b48c" },
-    { name: "coral", hex: "#ff7f50" }
+    { name: "coral", hex: "#ff7f50" },
   ];
 
   const backgroundStyle = {
@@ -47,93 +47,21 @@ const MatchMakingPage = () => {
     position: "relative",
   };
 
-  // // Initialize socket connection
-  // useEffect(() => {
-  //   const newSocket = io('http://localhost:3001');
-  //   setSocket(newSocket);
-
-  //   // Listen for available games list
-  //   newSocket.on('games-list', (games) => {
-  //     setAvailableGames(games);
-  //   });
-
-  //   // Request games list on mount
-  //   newSocket.on('games-list-updated', () => {
-  //     newSocket.emit('get-games-list');
-  //   });
-
-  //   newSocket.on('game-created', (data) => {
-  //     console.log('Game created:', data);
-  //     if(data.success) {
-  //       toast.success('Game created! Redirecting to lobby...');
-  //       setTimeout(() => {
-  //         navigate("/lobby", {
-  //           state: {
-  //             gameId: data.gameId,
-  //             playerColor: selectedColor,
-  //             playerName,
-  //             isHost: true,
-  //             initialLobbyPlayers: data.lobby.players
-  //           }
-  //         });
-  //       }, 1000);
-  //     }
-  //   });
-
-  //   newSocket.on('game-joined', (data) => {
-  //     console.log('Game joined:', data);
-  //     if(data.success) {
-  //       toast.success("Joined game! Redirecting to lobby...");
-  //       setTimeout(() => {
-  //         navigate("/lobby", {
-  //           state: {
-  //             gameId: data.gameId,
-  //             playerColor: selectedColor,
-  //             playerName,
-  //             isHost: false,
-  //             initialLobbyPlayers: data.lobby.players
-  //           }
-  //         });
-  //       }, 1000);
-  //     }
-  //   });
-
-  //   newSocket.on('error', (error) => {
-  //     console.error('Socket error:', error);
-  //     toast.error(error.message || 'An error occurred');
-  //   });
-
-  //   // Request games list on mount
-  //   newSocket.emit('get-games-list');
-
-  //   // Refresh games list every 3 seconds
-  //   const interval = setInterval(() => {
-  //     newSocket.emit('get-games-list');
-  //   }, 3000);
-
-  //   return () => {
-  //     clearInterval(interval);
-  //     newSocket.off('game-created');
-  //     newSocket.off('game-joined');
-  //     newSocket.off('games-list');
-  //   };
-  // }, [navigate]);
-
   useEffect(() => {
-    if(!socket) return;
+    if (!socket) return;
 
     const handleGamesList = (games) => {
       setAvailableGames(games);
     };
 
     const handleGamesListUpdated = () => {
-      socket.emit('get-games-list');
+      socket.emit("get-games-list");
     };
 
     const handleGameCreated = (data) => {
-      console.log('Game created:', data);
-      if(data.success) {
-        toast.success('Game created! Redirecting to lobby...');
+      console.log("Game created:", data);
+      if (data.success) {
+        toast.success("Game created! Redirecting to lobby...");
         setTimeout(() => {
           navigate("/lobby", {
             state: {
@@ -141,17 +69,17 @@ const MatchMakingPage = () => {
               playerColor: selectedColor,
               playerName,
               isHost: true,
-              initialLobbyPlayers: data.lobby.players
-            }
+              initialLobbyPlayers: data.lobby.players,
+            },
           });
         }, 1000);
       }
     };
 
     const handleGameJoined = (data) => {
-      console.log('Game joined:', data);
-      if(data.success) {
-        toast.success('Joined game! Redirecting to lobby...');
+      console.log("Game joined:", data);
+      if (data.success) {
+        toast.success("Joined game! Redirecting to lobby...");
         setTimeout(() => {
           navigate("/lobby", {
             state: {
@@ -159,40 +87,40 @@ const MatchMakingPage = () => {
               playerColor: selectedColor,
               playerName,
               isHost: false,
-              initialLobbyPlayers: data.lobby.players
-            }
+              initialLobbyPlayers: data.lobby.players,
+            },
           });
         }, 1000);
       }
     };
 
     const handleError = (error) => {
-      console.log('Socket error:', error);
-      toast.error(error.message || 'An error occurred');
+      console.log("Socket error:", error);
+      toast.error(error.message || "An error occurred");
     };
 
     // Register listeners
-    socket.on('games-list', handleGamesList);
-    socket.on('games-list-updated', handleGamesListUpdated);
-    socket.on('game-created', handleGameCreated);
-    socket.on('game-joined', handleGameJoined);
-    socket.on('error', handleError);
+    socket.on("games-list", handleGamesList);
+    socket.on("games-list-updated", handleGamesListUpdated);
+    socket.on("game-created", handleGameCreated);
+    socket.on("game-joined", handleGameJoined);
+    socket.on("error", handleError);
 
     // Request games list
-    socket.emit('get-games-list');
+    socket.emit("get-games-list");
 
     // Refresh games list every 3 seconds
     const interval = setInterval(() => {
-      socket.emit('get-games-list');
+      socket.emit("get-games-list");
     }, 3000);
 
     return () => {
       clearInterval(interval);
-      socket.off('games-list', handleGamesList);
-      socket.off('games-list-updated', handleGamesListUpdated);
-      socket.off('game-created', handleGameCreated);
-      socket.off('game-joined', handleGameJoined);
-      socket.off('error', handleError);
+      socket.off("games-list", handleGamesList);
+      socket.off("games-list-updated", handleGamesListUpdated);
+      socket.off("game-created", handleGameCreated);
+      socket.off("game-joined", handleGameJoined);
+      socket.off("error", handleError);
     };
   }, [socket, navigate, selectedColor, playerName]);
 
@@ -207,10 +135,10 @@ const MatchMakingPage = () => {
 
     // Emit create game event
     if (socket) {
-      socket.emit('create-game', {
+      socket.emit("create-game", {
         gameId: newGameId,
         hostName: playerName,
-        hostColor: selectedColor
+        hostColor: selectedColor,
       });
 
       setShowCreateModal(false);
@@ -229,8 +157,8 @@ const MatchMakingPage = () => {
     }
 
     // Check if game exists in available games
-    const game = availableGames.find(g => g.id === gameId);
-    
+    const game = availableGames.find((g) => g.id === gameId);
+
     if (!game) {
       toast.error("Game not found!");
       return;
@@ -249,10 +177,10 @@ const MatchMakingPage = () => {
 
     // Emit join game event
     if (socket) {
-      socket.emit('join-game', {
+      socket.emit("join-game", {
         gameId,
         playerName,
-        playerColor: selectedColor
+        playerColor: selectedColor,
       });
 
       setShowJoinModal(false);
@@ -267,9 +195,10 @@ const MatchMakingPage = () => {
     }
 
     // Find first available game with space
-    const availableGame = availableGames.find(game => 
-      game.playerCount < 8 && 
-      (!game.takenColors || !game.takenColors.includes(selectedColor))
+    const availableGame = availableGames.find(
+      (game) =>
+        game.playerCount < 8 &&
+        (!game.takenColors || !game.takenColors.includes(selectedColor)),
     );
 
     if (availableGame) {
@@ -290,9 +219,9 @@ const MatchMakingPage = () => {
               backdropFilter: "blur(8px)",
               border: "1px solid white",
               color: "white",
-              fontSize: "18px",
-              padding: "12px 20px",
-              borderRadius: "12px",
+              fontSize: "16px",
+              padding: "10px 16px",
+              borderRadius: "10px",
             },
             iconTheme: {
               primary: "#4ade80",
@@ -305,9 +234,9 @@ const MatchMakingPage = () => {
               backdropFilter: "blur(8px)",
               border: "1px solid white",
               color: "white",
-              fontSize: "18px",
-              padding: "12px 20px",
-              borderRadius: "12px",
+              fontSize: "16px",
+              padding: "10px 16px",
+              borderRadius: "10px",
             },
             iconTheme: {
               primary: "#f87171",
@@ -318,21 +247,18 @@ const MatchMakingPage = () => {
       />
 
       {/* Title */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 text-center">
-        <h1 className="text-6xl font-bold text-white drop-shadow-lg">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
+        <h1 className="text-4xl font-bold text-white drop-shadow-lg">
           MATCHMAKING
         </h1>
-        <p className="text-2xl text-white/80 mt-2">
-          Create or Join a Game
-        </p>
+        <p className="text-lg text-white/80 mt-1">Create or Join a Game</p>
       </div>
 
       {/* Main Container */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] flex flex-col gap-6">
-        
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[700px] flex flex-col gap-4">
         {/* Player Name Input */}
-        <div className="bg-black/30 backdrop-blur-md border-white border-2 rounded-3xl p-6">
-          <label className="text-white text-xl font-bold block mb-3">
+        <div className="bg-black/30 backdrop-blur-md border-white border-2 rounded-2xl p-4">
+          <label className="text-white text-lg font-bold block mb-2">
             Enter Your Name
           </label>
           <input
@@ -341,37 +267,48 @@ const MatchMakingPage = () => {
             onChange={(e) => setPlayerName(e.target.value)}
             placeholder="Your name..."
             maxLength={20}
-            className="w-full px-4 py-3 rounded-xl text-xl bg-white/20 backdrop-blur-sm border-2 border-white text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
+            className="w-full px-3 py-2 rounded-lg text-lg bg-white/20 backdrop-blur-sm border-2 border-white text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
           />
         </div>
 
         {/* Color Selection */}
-        <div className="bg-black/30 backdrop-blur-md border-white border-2 rounded-3xl p-6">
-          <label className="text-white text-xl font-bold block mb-3">
+        <div className="bg-black/30 backdrop-blur-md border-white border-2 rounded-2xl p-4">
+          <label className="text-white text-lg font-bold block mb-2">
             Select Your Color
           </label>
-          <div className="grid grid-cols-9 gap-3">
+          <div className="grid grid-cols-9 gap-2">
             {allColors.map((color) => (
               <button
                 key={color.name}
                 onClick={() => setSelectedColor(color.name)}
                 className={`
-                  w-12 h-12 rounded-full relative
+                  w-10 h-10 rounded-full relative
                   transition-all duration-300
                   hover:scale-110 cursor-pointer
-                  ${selectedColor === color.name ? 'ring-4 ring-white scale-110' : ''}
+                  ${selectedColor === color.name ? "ring-4 ring-white scale-110" : ""}
                 `}
                 style={{
                   backgroundColor: color.hex,
-                  border: color.name === 'white' ? '2px solid #gray' : '2px solid white',
+                  border:
+                    color.name === "white"
+                      ? "2px solid #gray"
+                      : "2px solid white",
                 }}
                 title={color.name}
               >
                 {selectedColor === color.name && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl" style={{ 
-                      color: color.name === 'white' || color.name === 'yellow' || color.name === 'banana' ? 'black' : 'white' 
-                    }}>
+                    <span
+                      className="text-xl"
+                      style={{
+                        color:
+                          color.name === "white" ||
+                          color.name === "yellow" ||
+                          color.name === "banana"
+                            ? "black"
+                            : "white",
+                      }}
+                    >
                       ✓
                     </span>
                   </div>
@@ -382,39 +319,39 @@ const MatchMakingPage = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-green-600/80 backdrop-blur-md border-white border-2 rounded-2xl p-6 text-white text-xl font-bold hover:bg-green-600 hover:scale-105 transition-all duration-300 active:scale-95"
+            className="bg-green-600/80 backdrop-blur-md border-white border-2 rounded-xl p-4 text-white text-lg font-bold hover:bg-green-600 hover:scale-105 transition-all duration-300 active:scale-95"
           >
-            <div className="text-4xl mb-2">🎮</div>
+            <div className="text-3xl mb-1">🎮</div>
             CREATE GAME
           </button>
 
           <button
             onClick={() => setShowJoinModal(true)}
-            className="bg-blue-600/80 backdrop-blur-md border-white border-2 rounded-2xl p-6 text-white text-xl font-bold hover:bg-blue-600 hover:scale-105 transition-all duration-300 active:scale-95"
+            className="bg-blue-600/80 backdrop-blur-md border-white border-2 rounded-xl p-4 text-white text-lg font-bold hover:bg-blue-600 hover:scale-105 transition-all duration-300 active:scale-95"
           >
-            <div className="text-4xl mb-2">🚪</div>
+            <div className="text-3xl mb-1">🚪</div>
             JOIN GAME
           </button>
 
           <button
             onClick={handleQuickJoin}
-            className="bg-purple-600/80 backdrop-blur-md border-white border-2 rounded-2xl p-6 text-white text-xl font-bold hover:bg-purple-600 hover:scale-105 transition-all duration-300 active:scale-95"
+            className="bg-purple-600/80 backdrop-blur-md border-white border-2 rounded-xl p-4 text-white text-lg font-bold hover:bg-purple-600 hover:scale-105 transition-all duration-300 active:scale-95"
           >
-            <div className="text-4xl mb-2">⚡</div>
+            <div className="text-3xl mb-1">⚡</div>
             QUICK JOIN
           </button>
         </div>
 
         {/* Available Games */}
-        <div className="bg-black/30 backdrop-blur-md border-white border-2 rounded-3xl p-6 max-h-64 overflow-y-auto">
-          <h3 className="text-white text-xl font-bold mb-4">
+        <div className="bg-black/30 backdrop-blur-md border-white border-2 rounded-2xl p-4 max-h-48 overflow-y-auto">
+          <h3 className="text-white text-lg font-bold mb-3">
             Available Games ({availableGames.length})
           </h3>
           {availableGames.length === 0 ? (
-            <p className="text-white/60 text-center py-4">
+            <p className="text-white/60 text-center py-3">
               No active games. Create one to get started!
             </p>
           ) : (
@@ -422,20 +359,23 @@ const MatchMakingPage = () => {
               {availableGames.map((game) => (
                 <div
                   key={game.id}
-                  className="bg-white/10 rounded-xl p-4 flex items-center justify-between hover:bg-white/20 transition-all"
+                  className="bg-white/10 rounded-lg p-3 flex items-center justify-between hover:bg-white/20 transition-all"
                 >
                   <div>
-                    <p className="text-white font-bold">{game.hostName}'s Game</p>
+                    <p className="text-white font-bold text-base">
+                      {game.hostName}'s Game
+                    </p>
                     <p className="text-white/60 text-sm">
-                      Players: {game.playerCount}/8 • ID: {game.id.substring(0, 12)}...
+                      Players: {game.playerCount}/8 • ID:{" "}
+                      {game.id.substring(0, 12)}...
                     </p>
                   </div>
                   <button
                     onClick={() => handleJoinGame(game.id)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition-all"
+                    className="bg-green-600 text-white px-3 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-all"
                     disabled={game.playerCount >= 8}
                   >
-                    {game.playerCount >= 8 ? 'FULL' : 'JOIN'}
+                    {game.playerCount >= 8 ? "FULL" : "JOIN"}
                   </button>
                 </div>
               ))}
@@ -447,42 +387,45 @@ const MatchMakingPage = () => {
       {/* Create Game Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-black/80 backdrop-blur-md border-white border-2 rounded-3xl p-8 w-[500px]">
-            <h2 className="text-3xl font-bold text-white mb-6 text-center">
+          <div className="bg-black/80 backdrop-blur-md border-white border-2 rounded-2xl p-6 w-[90%] max-w-[450px]">
+            <h2 className="text-2xl font-bold text-white mb-4 text-center">
               Create New Game
             </h2>
-            
-            <div className="space-y-4">
+
+            <div className="space-y-3">
               <div>
-                <p className="text-white text-lg mb-2">
-                  <span className="font-bold">Name:</span> {playerName || "Not set"}
+                <p className="text-white text-base mb-2">
+                  <span className="font-bold">Name:</span>{" "}
+                  {playerName || "Not set"}
                 </p>
-                <p className="text-white text-lg mb-2">
-                  <span className="font-bold">Color:</span> 
-                  <span 
-                    className="inline-block w-6 h-6 rounded-full ml-2 align-middle"
-                    style={{ 
-                      backgroundColor: allColors.find(c => c.name === selectedColor)?.hex,
-                      border: '2px solid white'
+                <p className="text-white text-base mb-2">
+                  <span className="font-bold">Color:</span>
+                  <span
+                    className="inline-block w-5 h-5 rounded-full ml-2 align-middle"
+                    style={{
+                      backgroundColor: allColors.find(
+                        (c) => c.name === selectedColor,
+                      )?.hex,
+                      border: "2px solid white",
                     }}
                   />
                   <span className="ml-2 capitalize">{selectedColor}</span>
                 </p>
-                <p className="text-white/60 text-sm mt-4">
+                <p className="text-white/60 text-sm mt-3">
                   You will be the host of this game and can start it when ready.
                 </p>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-3 mt-4">
                 <button
                   onClick={handleCreateGame}
-                  className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition-all"
+                  className="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-bold text-base hover:bg-green-700 transition-all"
                 >
                   CREATE & HOST
                 </button>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-gray-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-gray-700 transition-all"
+                  className="flex-1 bg-gray-600 text-white py-2.5 rounded-lg font-bold text-base hover:bg-gray-700 transition-all"
                 >
                   CANCEL
                 </button>
@@ -495,14 +438,14 @@ const MatchMakingPage = () => {
       {/* Join Game Modal */}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-black/80 backdrop-blur-md border-white border-2 rounded-3xl p-8 w-[500px]">
-            <h2 className="text-3xl font-bold text-white mb-6 text-center">
+          <div className="bg-black/80 backdrop-blur-md border-white border-2 rounded-2xl p-6 w-[90%] max-w-[450px]">
+            <h2 className="text-2xl font-bold text-white mb-4 text-center">
               Join Existing Game
             </h2>
-            
-            <div className="space-y-4">
+
+            <div className="space-y-3">
               <div>
-                <label className="text-white text-lg font-bold block mb-2">
+                <label className="text-white text-base font-bold block mb-2">
                   Game ID
                 </label>
                 <input
@@ -510,31 +453,34 @@ const MatchMakingPage = () => {
                   value={gameIdInput}
                   onChange={(e) => setGameIdInput(e.target.value)}
                   placeholder="Enter game ID..."
-                  className="w-full px-4 py-3 rounded-xl text-lg bg-white/20 backdrop-blur-sm border-2 border-white text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
+                  className="w-full px-3 py-2.5 rounded-lg text-base bg-white/20 backdrop-blur-sm border-2 border-white text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
                 />
               </div>
 
               <div>
-                <p className="text-white text-lg mb-2">
-                  <span className="font-bold">Your Name:</span> {playerName || "Not set"}
+                <p className="text-white text-base mb-2">
+                  <span className="font-bold">Your Name:</span>{" "}
+                  {playerName || "Not set"}
                 </p>
-                <p className="text-white text-lg mb-2">
-                  <span className="font-bold">Your Color:</span> 
-                  <span 
-                    className="inline-block w-6 h-6 rounded-full ml-2 align-middle"
-                    style={{ 
-                      backgroundColor: allColors.find(c => c.name === selectedColor)?.hex,
-                      border: '2px solid white'
+                <p className="text-white text-base mb-2">
+                  <span className="font-bold">Your Color:</span>
+                  <span
+                    className="inline-block w-5 h-5 rounded-full ml-2 align-middle"
+                    style={{
+                      backgroundColor: allColors.find(
+                        (c) => c.name === selectedColor,
+                      )?.hex,
+                      border: "2px solid white",
                     }}
                   />
                   <span className="ml-2 capitalize">{selectedColor}</span>
                 </p>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => handleJoinGame(gameIdInput)}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-blue-700 transition-all"
+                  className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold text-base hover:bg-blue-700 transition-all"
                 >
                   JOIN GAME
                 </button>
@@ -543,7 +489,7 @@ const MatchMakingPage = () => {
                     setShowJoinModal(false);
                     setGameIdInput("");
                   }}
-                  className="flex-1 bg-gray-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-gray-700 transition-all"
+                  className="flex-1 bg-gray-600 text-white py-2.5 rounded-lg font-bold text-base hover:bg-gray-700 transition-all"
                 >
                   CANCEL
                 </button>
@@ -556,7 +502,7 @@ const MatchMakingPage = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate("/")}
-        className="absolute bottom-8 left-8 bg-red-600/80 backdrop-blur-md border-white border-2 rounded-2xl px-6 py-4 text-white text-xl font-bold hover:bg-red-600 hover:scale-105 transition-all duration-300 active:scale-95"
+        className="absolute bottom-4 left-4 bg-red-600/80 backdrop-blur-md border-white border-2 rounded-xl px-5 py-3 text-white text-lg font-bold hover:bg-red-600 hover:scale-105 transition-all duration-300 active:scale-95"
       >
         ← BACK
       </button>
