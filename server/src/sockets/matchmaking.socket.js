@@ -33,7 +33,7 @@ export const registerMatchmakingSockets = (io, socket) => {
       players: [
         {
           id: socket.id,
-          name: hostName,
+          name: hostColor,
           color: hostColor,
           isHost: true,
           isBot: false,
@@ -49,7 +49,7 @@ export const registerMatchmakingSockets = (io, socket) => {
     socket.join(gameId);
     socket.data.gameId = gameId;
     socket.data.playerColor = hostColor;
-    socket.data.playerName = hostName;
+    socket.data.playerName = hostColor;
     socket.data.isHost = true;
 
     // Emit success
@@ -95,7 +95,7 @@ export const registerMatchmakingSockets = (io, socket) => {
     // Add player to lobby
     const newPlayer = {
       id: socket.id,
-      name: playerName,
+      name: playerColor,
       color: playerColor,
       isHost: false,
       isBot: false,
@@ -107,7 +107,7 @@ export const registerMatchmakingSockets = (io, socket) => {
     socket.join(gameId);
     socket.data.gameId = gameId;
     socket.data.playerColor = playerColor;
-    socket.data.playerName = playerName;
+    socket.data.playerName = playerColor;
     socket.data.isHost = false;
 
     // Notify the joining player
@@ -152,7 +152,7 @@ export const registerMatchmakingSockets = (io, socket) => {
     // Notify all players in lobby
     io.to(gameId).emit("player-color-changed", {
       playerId: socket.id,
-      playerName: player.name,
+      playerName: player.color,
       oldColor,
       newColor,
     });
@@ -213,7 +213,7 @@ export const registerMatchmakingSockets = (io, socket) => {
 
         lobby.players.push({
           id: `bot-${Date.now()}-${Math.random()}`,
-          name: `Bot ${lobby.players.length}`,
+          name: availableColor,
           color: availableColor,
           isHost: false,
           isBot: true,

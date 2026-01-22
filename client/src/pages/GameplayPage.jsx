@@ -394,45 +394,50 @@ const GameplayPage = () => {
       />
 
       {/* Other Characters */}
-      {characterPositions.slice(0, otherPlayers.length).map((pos, i) => {
-        const player = otherPlayers[i];
-        const isTargeting = Boolean(selectingAbility) || selectingDmTarget;
+      {characterPositions
+        .slice(0, otherPlayers.filter((p) => p.alive && !p.eliminated).length)
+        .map((pos, i) => {
+          const alivePlayers = otherPlayers.filter(
+            (p) => p.alive && !p.eliminated,
+          );
+          const player = alivePlayers[i];
+          const isTargeting = Boolean(selectingAbility) || selectingDmTarget;
 
-        let imageSrc = `/images/characters/${player.color}.png`;
-        if (i === 3) {
-          imageSrc = `images/charactersFront/${player.color}.png`;
-        }
+          let imageSrc = `/images/characters/${player.color}.png`;
+          if (i === 3) {
+            imageSrc = `images/charactersFront/${player.color}.png`;
+          }
 
-        return (
-          <img
-            key={player.id}
-            src={imageSrc}
-            alt={`player-${player.color}`}
-            style={{
-              position: "absolute",
-              width: `${
-                i === 0 || i === 6
-                  ? "128px"
-                  : i === 1 || i === 5
-                    ? "120px"
-                    : "112px"
-              }`,
-              ...pos,
-              transform: `translate(-50%, -50%) ${i < 3 ? "scaleX(-1)" : ""}`,
-              zIndex: 1,
-              filter: isTargeting
-                ? selectingAbility
-                  ? abilityGlow[selectingAbility]
-                  : "drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))"
-                : "none",
-              cursor: isTargeting ? "pointer" : "default",
-              transition:
-                "filter 0.2s ease, border 0.2s ease, transform 0.2s ease",
-            }}
-            onClick={() => player.alive && handleCharacterClick(player.color)}
-          />
-        );
-      })}
+          return (
+            <img
+              key={player.id}
+              src={imageSrc}
+              alt={`player-${player.color}`}
+              style={{
+                position: "absolute",
+                width: `${
+                  i === 0 || i === 6
+                    ? "128px"
+                    : i === 1 || i === 5
+                      ? "120px"
+                      : "112px"
+                }`,
+                ...pos,
+                transform: `translate(-50%, -50%) ${i < 3 ? "scaleX(-1)" : ""}`,
+                zIndex: 1,
+                filter: isTargeting
+                  ? selectingAbility
+                    ? abilityGlow[selectingAbility]
+                    : "drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))"
+                  : "none",
+                cursor: isTargeting ? "pointer" : "default",
+                transition:
+                  "filter 0.2s ease, border 0.2s ease, transform 0.2s ease",
+              }}
+              onClick={() => player.alive && handleCharacterClick(player.color)}
+            />
+          );
+        })}
 
       {/* Left panels */}
       <LeftPanels

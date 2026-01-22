@@ -466,7 +466,7 @@ function getAvailableAbilities(role) {
 }
 
 // Get ability description for toast message
-function getAbilityDescription(ability, actorName, targetName, isSelf) {
+export function getAbilityDescription(ability, actorName, targetName, isSelf) {
   const descriptions = {
     attack: {
       actor: `You attacked ${targetName}!`,

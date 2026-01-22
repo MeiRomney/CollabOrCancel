@@ -1,5 +1,6 @@
 import {
   clearBotTimers,
+  getAbilityDescription,
   handleBotPhase,
   updateBotMemories,
 } from "../ai/botController.js";
@@ -212,10 +213,47 @@ export const registerGameSockets = (io, socket) => {
   });
 
   socket.on("submit-ability", ({ gameId, ability, target, playerColor }) => {
+    const game = getGame(gameId);
+    if (!game) return;
+
     updateGame(gameId, (game) => {
       if (!game.abilities) game.abilities = {};
       game.abilities[playerColor] = { ability, target };
     });
+
+    // Get player names for toast messages
+    const actor = game.players.find((p) => p.color === playerColor);
+    const targetPlayer = game.players.find((p) => p.color === target);
+    const isSelf = target === playerColor;
+
+    if (!actor || !targetPlayer) {
+      socket.emit("ability-submitted", { ability, target });
+      return;
+    }
+
+    const descriptions = getAbilityDescription(
+      ability,
+      actor.name,
+      targetPlayer.name,
+      isSelf,
+    );
+
+    // Send toast to the actor
+    io.to(gameId).emit("ability-used", {
+      playerColor: playerColor,
+      message: descriptions.actor,
+      type: "success",
+    });
+
+    // Send toast to the target (if not self)
+    if (!isSelf) {
+      io.to(gameId).emit("ability-used", {
+        playerColor: target,
+        message: descriptions.target,
+        type:
+          ability === "attack" || ability === "sabotage" ? "warning" : "info",
+      });
+    }
 
     socket.emit("ability-submitted", { ability, target });
   });
