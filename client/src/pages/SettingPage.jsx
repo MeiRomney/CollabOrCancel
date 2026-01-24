@@ -30,9 +30,6 @@ const SettingPage = () => {
         >
           {isMuted ? "🔇 Music Off" : "🔊 Music On"}
         </button>
-        <button className="w-80 h-20 rounded-full bg-red-400 flex items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all text-white text-2xl font-bold">
-          Sign Up
-        </button>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import RolesPage from "./pages/RolesPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import SettingPage from "./pages/SettingPage";
 import { AudioProvider } from "./contexts/AudioContext";
+import LoginPage from "./pages/loginPage";
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/gamerules" element={<GameRules />} />
             <Route path="/roles" element={<RolesPage />} />
             <Route path="/aboutus" element={<AboutUsPage />} />

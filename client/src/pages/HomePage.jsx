@@ -40,7 +40,10 @@ const HomePage = () => {
             >
               PLAY NOW
             </button>
-            <button className="w-56 h-20 rounded-full bg-red-400 flex items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all text-white text-2xl font-bold">
+            <button
+              className="w-56 h-20 rounded-full bg-red-400 flex items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all text-white text-2xl font-bold"
+              onClick={() => navigate("/login")}
+            >
               Sign Up
             </button>
           </div>

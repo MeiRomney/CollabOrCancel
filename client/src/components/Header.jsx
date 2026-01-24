@@ -65,9 +65,12 @@ const Header = ({ activeMenu, toggleMenu }) => {
               >
                 {item}
               </button>
-            )
+            ),
           )}
-          <button className="w-32 h-16 rounded-full bg-red-400 flex items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all">
+          <button
+            className="w-32 h-16 rounded-full bg-red-400 flex items-center justify-center cursor-pointer duration-500 hover:bg-red-500 hover:scale-95 transition-all"
+            onClick={() => navigate("/login")}
+          >
             Sign Up
           </button>
         </div>
@@ -101,7 +104,7 @@ const Header = ({ activeMenu, toggleMenu }) => {
                   >
                     {item}
                   </button>
-                )
+                ),
               )}
             </div>
           </motion.div>
