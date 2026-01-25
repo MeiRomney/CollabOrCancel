@@ -1,6 +1,8 @@
 {
   "build": {
     "builder": "nixpacks",
-    "buildCommand": "npm install"
+    "nixpacks": {
+      "nodejs": "22.12"
+    }
   }
 }
