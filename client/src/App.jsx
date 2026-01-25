@@ -11,7 +11,7 @@ import RolesPage from "./pages/RolesPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import SettingPage from "./pages/SettingPage";
 import { AudioProvider } from "./contexts/AudioContext";
-import LoginPage from "./pages/loginPage";
+import LoginPage from "./pages/LoginPage";
 
 const App = () => {
   return (
