@@ -1,6 +1,10 @@
 {
   "name": "collab-or-cancel",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "private": true,
   "workspaces": [
     "client",
@@ -8,8 +12,7 @@
   ],
   "scripts": {
     "start": "cd server && npm start",
-    "dev": "concurrently \"cd client && npm run dev\" \"cd server && npm run dev\"",
-    "install-all": "npm install && npm install --workspace=client && npm install --workspace=server"
+    "dev": "concurrently \"cd client && npm run dev\" \"cd server && npm run dev\""
   },
   "devDependencies": {
     "concurrently": "^8.0.0"
