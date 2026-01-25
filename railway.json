@@ -2,7 +2,7 @@
   "build": {
     "builder": "nixpacks",
     "nixpacks": {
-      "nodejs": "22.12"
+      "nodejs": "22.12.0"
     }
   }
 }
