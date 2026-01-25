@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -21,42 +26,26 @@ const LoginPage = () => {
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
 
+    // Check if user is already logged in
+    checkUser();
+
     return () => {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
     };
   }, []);
 
+  const checkUser = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      navigate("/");
+    }
+  };
+
   const toggleMenu = () => {
     setActiveMenu(!activeMenu);
-  };
-
-  // Mock API function
-  const mockLogin = async (email, password) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Mock validation
-    if (email === "demo@example.com" && password === "password123") {
-      return {
-        success: true,
-        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.token",
-        user: { id: 1, email, name: "Demo User" },
-      };
-    }
-    throw new Error("Invalid credentials");
-  };
-
-  const mockSignup = async (name, email, password) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Mock successful signup
-    return {
-      success: true,
-      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.token",
-      user: { id: 2, email, name },
-    };
   };
 
   const validateForm = () => {
@@ -114,35 +103,48 @@ const LoginPage = () => {
     setMessage({ type: "", text: "" });
 
     try {
-      let response;
-
       if (isLogin) {
-        response = await mockLogin(formData.email, formData.password);
+        // LOGIN
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) throw error;
+
         setMessage({
           type: "success",
           text: "Login successful! Redirecting...",
         });
+
+        // Redirect after successful login
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       } else {
-        response = await mockSignup(
-          formData.name,
-          formData.email,
-          formData.password,
-        );
+        // SIGNUP
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.name,
+            },
+          },
+        });
+
+        if (error) throw error;
+
         setMessage({
           type: "success",
-          text: "Account created successfully! Redirecting...",
+          text: "Account created successfully! Please check your email to verify your account.",
         });
+
+        // Optionally redirect after signup
+        setTimeout(() => {
+          setIsLogin(true);
+        }, 3000);
       }
-
-      // Store JWT token
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
-
-      // Redirect or update app state
-      setTimeout(() => {
-        console.log("Redirecting to home page");
-        navigate("/");
-      }, 1500);
     } catch (error) {
       setMessage({
         type: "error",
@@ -150,6 +152,24 @@ const LoginPage = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider, // 'google' or 'github'
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error.message || "Social login failed",
+      });
     }
   };
 
@@ -239,17 +259,6 @@ const LoginPage = () => {
                     : "Join us and get started"}
                 </p>
               </div>
-
-              {/* Demo credentials info */}
-              {isLogin && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl text-sm shadow-sm">
-                  <p className="text-blue-900 font-semibold mb-1">
-                    🔑 Demo Credentials:
-                  </p>
-                  <p className="text-blue-700">Email: demo@example.com</p>
-                  <p className="text-blue-700">Password: password123</p>
-                </div>
-              )}
 
               {/* Message */}
               {message.text && (
@@ -534,6 +543,7 @@ const LoginPage = () => {
                 <div className="mt-6 grid grid-cols-2 gap-4">
                   <button
                     type="button"
+                    // onClick={() => handleSocialLogin("google")}
                     className="w-full inline-flex justify-center items-center px-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -559,6 +569,7 @@ const LoginPage = () => {
 
                   <button
                     type="button"
+                    // onClick={() => handleSocialLogin("github")}
                     className="w-full inline-flex justify-center items-center px-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <svg

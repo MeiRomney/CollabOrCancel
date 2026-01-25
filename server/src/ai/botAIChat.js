@@ -1,9 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ENHANCED_FALLBACKS } from "./botFallbackMessages.js";
 
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY || "YOUR_API_KEY_HERE",
-);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // TOGGLE: Set to false to disable all API calls and use only fallbacks
 const USE_AI_API = false;
